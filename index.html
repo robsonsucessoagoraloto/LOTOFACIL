@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Lotofácil · Análises</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;800&display=swap" rel="stylesheet">
@@ -249,6 +249,15 @@ header.top .band,header.top.band{padding-bottom:20px}
 @media(max-width:600px){.subm{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.subm a{flex:none}.mods{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1*max(5vw,16px));padding:0 max(5vw,16px) 4px;width:100vw}.mods a{flex:none}header.top .wrap>div:first-child{width:100%}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.stack tr.end td{padding-inline-start:0}.stack tr.end td::before{display:none}.bar{grid-template-columns:5.5em minmax(0,1fr) 5.5em}}
 @media(prefers-reduced-motion:no-preference){.n.pend{animation:pop .5s ease both}@keyframes pop{from{transform:scale(.85)}to{transform:none}}}
 </style><script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+<meta name="theme-color" content="#8a0f8f">
+<meta name="description" content="Análises, simuladores e plano automático da Lotofácil.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Lotofácil">
 </head>
 <body>
 <header class="top band"><div class="wrap">
@@ -2960,4 +2969,17 @@ renderAll();route();
   if(add){extra=extra.slice(Math.min(extra.length,add));saveExtra();cst=null;st=null;renderAll();route()}}catch(e){}})();
 
 }
-</script></body></html>
+</script><button id="pwaInstall" type="button" hidden style="position:fixed;right:16px;bottom:16px;z-index:50;border:0;border-radius:999px;padding:12px 18px;font:600 15px Archivo,system-ui,sans-serif;background:var(--gold,#ffc53d);color:#1d0b22;box-shadow:0 4px 16px #0005;cursor:pointer">Instalar app</button>
+<script>
+(function(){
+  var ok = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if ('serviceWorker' in navigator && ok) {
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+  var ev = null, b = document.getElementById('pwaInstall');
+  window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); ev = e; b.hidden = false; });
+  b.addEventListener('click', function(){ if (!ev) return; b.hidden = true; ev.prompt(); ev = null; });
+  window.addEventListener('appinstalled', function(){ b.hidden = true; });
+})();
+</script>
+</body></html>

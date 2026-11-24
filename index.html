@@ -245,6 +245,7 @@ header.top .band,header.top.band{padding-bottom:20px}
 .crit input{width:18px;height:18px;min-height:0;accent-color:var(--pur)}
 .qr{display:flex;flex-wrap:wrap;gap:6px}
 .qr button{min-height:36px;font-size:14px;padding:0 12px;background:var(--pur2);color:var(--pur);font-weight:500}
+#m-boloes .kpi b{font-size:clamp(18px,2.2vw,24px);line-height:1.2;display:block;white-space:normal;overflow-wrap:anywhere}
 @media(max-width:860px){.hero,.two{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.subm{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.subm a{flex:none}.mods{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1*max(5vw,16px));padding:0 max(5vw,16px) 4px;width:100vw}.mods a{flex:none}header.top .wrap>div:first-child{width:100%}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.stack tr.end td{padding-inline-start:0}.stack tr.end td::before{display:none}.bar{grid-template-columns:5.5em minmax(0,1fr) 5.5em}}
 @media(prefers-reduced-motion:no-preference){.n.pend{animation:pop .5s ease both}@keyframes pop{from{transform:scale(.85)}to{transform:none}}}
@@ -300,11 +301,14 @@ header.top .band,header.top.band{padding-bottom:20px}
         <div class="err" id="apErr"></div>
       </div>
       <div id="asPlan"></div>
-      <details class="slip" style="margin-top:16px" id="apiBox"><summary>Usar o assistente fora do Claude (chave da API)</summary>
-        <p class="small">Na versão do app hospedada por você (por exemplo, no GitHub), o assistente pode usar a sua própria chave da API da Anthropic. A chave fica guardada <b>só neste navegador</b> e vai direto para a Anthropic. O uso é cobrado na sua conta da API. Não use em computador compartilhado. Dentro do Claude, a chave não é necessária.</p>
+      <details class="slip" style="margin-top:16px" id="apiBox"><summary>Usar o assistente fora do Claude (chave de IA, tem opção gratuita)</summary>
+        <p class="small"><b>Opção gratuita: Google Gemini.</b> 1) Entre em <b>aistudio.google.com</b> com sua conta Google. 2) Clique em <b>Get API key</b> (Obter chave de API) e em <b>Create API key</b>. 3) Copie a chave (começa com <b>AIza</b>), cole aqui e salve. Não precisa de cartão. O plano grátis tem limite de uso por dia, e o Google pode usar as conversas do plano grátis para melhorar os produtos dele.</p>
+        <p class="small"><b>Opção paga: Anthropic (Claude).</b> Chave que começa com <b>sk-ant-</b>, cobrada por uso na sua conta da API.</p>
+        <p class="small">A chave fica guardada <b>só neste navegador</b> e vai direto para o Google ou para a Anthropic. Cada aparelho precisa da chave salva uma vez. Não use em computador compartilhado. Dentro do Claude, nenhuma chave é necessária.</p>
         <div class="formrow">
-          <label>Chave da API<input id="apiKey" type="password" autocomplete="off" spellcheck="false" style="width:min(22em,80vw)" placeholder="sk-ant-…"></label>
-          <label>Modelo<input id="apiModel" style="width:12em" value="claude-sonnet-5-5"></label>
+          <label>Serviço<select id="apiProv"><option value="gemini">Google Gemini (grátis)</option><option value="anthropic">Anthropic (pago)</option></select></label>
+          <label>Chave<input id="apiKey" type="password" autocomplete="off" spellcheck="false" style="width:min(22em,80vw)" placeholder="AIza… ou sk-ant-…"></label>
+          <label>Modelo (opcional)<input id="apiModel" style="width:12em" placeholder="automático"></label>
         </div>
         <div class="formrow"><button class="ghost" id="apiSave">Salvar neste navegador</button><button class="ghost" id="apiDel">Apagar chave</button></div>
         <p class="small" id="apiSt"></p>
@@ -1280,6 +1284,66 @@ header.top .band,header.top.band{padding-bottom:20px}
   <div class="pager"><button class="ghost" id="mtMore">Mostrar mais</button><span class="small" id="mtLN"></span></div>
 </div></section>
 </main>
+<main id="m-boloes" class="mod" hidden>
+<section class="band"><div class="wrap">
+  <div class="hero">
+    <div class="slip">
+      <h2>Caçador de bolões</h2>
+      <p class="sub" style="margin-top:0">Objetivo: receber fatias com frequência, pagando o mínimo. O app testa cada bolão e ordena pelo <b>custo por vez que você recebe</b> pelo menos o valor que escolher.</p>
+      <div class="formrow">
+        <label>Quero receber pelo menos (R$)<input id="boAlvo" type="number" min="1" step="1" style="width:8em"></label>
+        <label>Quero gastar por concurso (R$)<input id="boOrc" type="number" min="0" step="1" style="width:8em"></label>
+      </div>
+      <h3 style="margin:16px 0 6px">1. Trazer os bolões da Caixa</h3>
+      <p class="small" style="margin:0 0 8px"><b>Botão de um clique (Chrome no computador).</b> Arraste o botão abaixo para a barra de favoritos do Chrome, uma vez só. Depois, na página de bolões da Lotofácil no site da Caixa, clique no favorito: ele rola a página até o fim, lê os bolões e abre o app com o ranking pronto. Funciona também no iPhone.</p>
+      <p><a id="boBm" href="#" draggable="true" style="display:inline-block;padding:10px 16px;border-radius:999px;background:var(--gold);color:#1d0b22;font-weight:700;text-decoration:none">⭐ Avaliar bolões</a></p>
+      <details><summary><b>No iPhone (Safari): instalar o mesmo botão</b></summary>
+        <ol class="small" style="padding-left:18px">
+          <li>Toque em <b>Copiar código para o iPhone</b> (abaixo).</li>
+          <li>Ainda no Safari, toque em <b>Compartilhar</b> (quadrado com seta) → <b>Adicionar Favorito</b>. Troque o nome para <b>Avaliar bolões</b> e salve.</li>
+          <li>Toque no ícone de <b>livro</b> (Favoritos) → <b>Editar</b> → toque em <b>Avaliar bolões</b>. Apague o endereço, toque e segure e escolha <b>Colar</b>. Toque em OK.</li>
+          <li>Para usar: abra os bolões da Lotofácil no site da Caixa pelo Safari, toque no ícone de livro e em <b>Avaliar bolões</b>. Espere alguns segundos: ele rola a página e abre o ranking.</li>
+        </ol>
+        <div class="formrow"><button class="ghost" id="boCopy">Copiar código para o iPhone</button></div>
+        <textarea id="boCode" rows="3" style="width:100%" hidden readonly></textarea>
+        <p class="small">No iPhone, o ranking abre numa aba do Safari, não no app instalado: o iPhone não deixa um site entregar dados ao app da tela de início.</p>
+      </details>
+      <details><summary><b>Sem o botão: copiar e colar</b></summary>
+        <p class="small">Na página de bolões da Caixa, role até o fim, aperte Cmd + A e Cmd + C (Ctrl no Windows) e cole aqui.</p>
+        <textarea id="boTxt" rows="5" style="width:100%" placeholder="Cole aqui o texto da página de bolões"></textarea>
+        <div class="formrow"><button id="boRead">Ler bolões</button></div>
+      </details>
+      <details><summary><b>Adicionar um bolão à mão (ex.: bolão de balcão)</b></summary>
+        <div class="formrow">
+          <label>Lotérica<input id="boLot" style="width:12em" placeholder="opcional"></label>
+          <label>Apostas<input id="boAp" type="number" min="1" max="10" value="1" style="width:5em"></label>
+          <label>Dezenas por aposta<select id="boDz"><option>15</option><option selected>16</option><option>17</option><option>18</option><option>19</option><option>20</option></select></label>
+          <label>Total de cotas<input id="boCt" type="number" min="2" max="100" value="10" style="width:5em"></label>
+          <label>Preço da cota (R$)<input id="boPr" type="number" min="0" step="0.01" style="width:7em" placeholder="ex.: 14,25"></label>
+          <button class="ghost" id="boAdd">Adicionar</button>
+        </div>
+      </details>
+      <div class="formrow"><button class="ghost" id="boClr">Limpar lista</button></div>
+      <div class="err" id="boErr"></div>
+    </div>
+    <div class="status">
+      <p class="sub" style="margin:0" id="boHead">Nenhum bolão lido ainda</p>
+      <h2 id="boBest" style="font-size:clamp(26px,3.6vw,40px);color:var(--pur);margin:4px 0"></h2>
+      <p class="sub" id="boBestS"></p>
+      <div class="kpis" id="boK"></div>
+      <div class="note" id="boHonest"></div>
+    </div>
+  </div>
+</div></section>
+<section class="band" style="padding-top:0"><div class="wrap">
+  <h3>2. Sua carteira de bolões para hoje</h3>
+  <div id="boCart"></div>
+  <h3 style="margin-top:28px">3. Todos os bolões testados, do menor ao maior custo por vez que você recebe</h3>
+  <p class="lead" id="boLead"></p>
+  <div class="scroll"><table class="stack" id="boT"></table></div>
+  <div id="boDet" style="margin-top:20px"></div>
+</div></section>
+</main>
 <main id="m-calc" class="mod" hidden>
 <section class="band"><div class="wrap">
   <div class="hero">
@@ -1425,18 +1489,47 @@ function agentPayload(){
 let sampleP=null;const PARECERES={};
 const API_K='lf_api_v1';
 function apiCfg(){try{return JSON.parse(localStorage.getItem(API_K)||'null')}catch(e){return null}}
-// Usa a API da Anthropic direto do navegador, com a chave do próprio usuário, quando o app não está dentro do Claude.
+// Usa uma IA direto do navegador, com a chave do próprio usuário, quando o app não está dentro do Claude.
+// Google Gemini (tem plano gratuito) ou Anthropic (pago). A chave fica só neste navegador.
+const provOf=c=>c&&(c.prov||(/^AIza/.test(c.key||'')?'gemini':'anthropic'));
+const GEM='https://generativelanguage.googleapis.com/v1beta/';
+function gemSchema(x){if(!x||typeof x!=='object')return{type:'STRING'};const o={type:String(x.type||'object').toUpperCase()};
+  if(x.description)o.description=String(x.description);if(Array.isArray(x.enum))o.enum=x.enum.map(String);
+  if(x.properties){o.properties={};for(const k in x.properties)o.properties[k]=gemSchema(x.properties[k]);if(!Object.keys(o.properties).length)delete o.properties}
+  if(x.items)o.items=gemSchema(x.items);if(Array.isArray(x.required)&&x.required.length)o.required=x.required;return o}
+async function gemPickModel(key){const r=await fetch(GEM+'models?pageSize=200',{headers:{'x-goog-api-key':key}});if(!r.ok){const t=await r.text();const e=new Error('Gemini '+r.status+': '+t.slice(0,200));e.status=r.status;throw e}
+  const j=await r.json(),ok=(j.models||[]).filter(m=>(m.supportedGenerationMethods||[]).includes('generateContent')).map(m=>m.name.replace(/^models\//,''))
+    .filter(n=>/^gemini-/.test(n)&&/flash/.test(n)&&!/image|tts|audio|live|embed|thinking|exp/.test(n));
+  const ver=n=>{const m=n.match(/gemini-(\d+(?:\.\d+)?)/);return m?+m[1]:0},score=n=>ver(n)*10-(/lite/.test(n)?3:0)-(/preview/.test(n)?5:0)-(/\d{3}$|-\d{2}-\d{2}/.test(n)?1:0);
+  ok.sort((x,y)=>score(y)-score(x));return ok[0]||'gemini-flash-latest'}
 function apiSample(){const fn=async(input,opts={})=>{const cfg=apiCfg();if(!cfg||!cfg.key){const e=new Error('sem chave');e.code='not_granted';throw e}
   const msgs=typeof input==='string'?[{role:'user',content:input}]:input.map(m=>({role:m.role,content:m.content}));
-  const tools=(opts.tools||[]).map(t=>({name:t.name,description:t.description||'',input_schema:t.inputSchema||{type:'object',properties:{}}}));
-  let finalText='';
+  const toolsIn=opts.tools||[];let finalText='';
+  const fail=(st,t,who)=>{const e=new Error(who+' '+st+': '+t.slice(0,300));e.code=st===429?'rate_limited':st===401||st===403?'not_granted':'api_error';throw e};
+  if(provOf(cfg)==='gemini'){
+    const contents=[];for(const m of msgs){const role=m.role==='assistant'?'model':'user',text=typeof m.content==='string'?m.content:JSON.stringify(m.content);const last=contents[contents.length-1];if(last&&last.role===role)last.parts.push({text});else contents.push({role,parts:[{text}]})}
+    const decl=toolsIn.map(t=>({name:t.name,description:t.description||'',parameters:gemSchema(t.inputSchema||{type:'object',properties:{}})}));
+    const model=cfg.model||'gemini-flash-latest';
+    for(let it=0;it<14;it++){const body={contents};if(decl.length)body.tools=[{functionDeclarations:decl}];
+      const res=await fetch(GEM+'models/'+encodeURIComponent(model)+':generateContent',{method:'POST',signal:opts.signal,headers:{'content-type':'application/json','x-goog-api-key':cfg.key},body:JSON.stringify(body)});
+      if(!res.ok)fail(res.status,await res.text(),'Gemini');
+      const j=await res.json(),cont=j.candidates&&j.candidates[0]&&j.candidates[0].content;if(!cont||!cont.parts){if(!finalText)finalText='(A IA não respondeu. Tente de novo.)';break}
+      contents.push({role:'model',parts:cont.parts});
+      const txt=cont.parts.filter(p=>p.text&&!p.thought).map(p=>p.text).join('\n').trim();if(txt){finalText=txt;opts.onText&&opts.onText({text:txt,delta:txt})}
+      const calls=cont.parts.filter(p=>p.functionCall);if(!calls.length)break;
+      const resp=[];for(const p of calls){const c=p.functionCall,tool=toolsIn.find(t=>t.name===c.name);let out;
+        try{if(!tool)throw new Error('ferramenta desconhecida');out={result:await tool.execute(c.args||{})}}catch(err){out={error:String(err&&err.message||err)}}
+        const str=JSON.stringify(out);const r={name:c.name,response:str.length>30000?{result:str.slice(0,30000)}:out};if(c.id)r.id=c.id;resp.push({functionResponse:r})}
+      contents.push({role:'user',parts:resp})}
+    return {text:finalText,truncated:false}}
+  const tools=toolsIn.map(t=>({name:t.name,description:t.description||'',input_schema:t.inputSchema||{type:'object',properties:{}}}));
   for(let it=0;it<14;it++){const body={model:cfg.model||'claude-sonnet-5-5',max_tokens:4096,messages:msgs};if(tools.length)body.tools=tools;
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal:opts.signal,headers:{'content-type':'application/json','x-api-key':cfg.key,'anthropic-version':'2026-10-21','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
-    if(!res.ok){const t=await res.text();const e=new Error('API '+res.status+': '+t.slice(0,300));e.code=res.status===429?'rate_limited':res.status===401||res.status===403?'not_granted':'api_error';throw e}
+    if(!res.ok)fail(res.status,await res.text(),'API');
     const msg=await res.json();msgs.push({role:'assistant',content:msg.content});
     const txt=(msg.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();if(txt){finalText=txt;opts.onText&&opts.onText({text:txt,delta:txt})}
     if(msg.stop_reason!=='tool_use')break;
-    const results=[];for(const b of msg.content){if(b.type!=='tool_use')continue;const tool=(opts.tools||[]).find(t=>t.name===b.name);
+    const results=[];for(const b of msg.content){if(b.type!=='tool_use')continue;const tool=toolsIn.find(t=>t.name===b.name);
       try{if(!tool)throw new Error('ferramenta desconhecida');const out=await tool.execute(b.input||{});results.push({type:'tool_result',tool_use_id:b.id,content:JSON.stringify(out).slice(0,30000)})}
       catch(err){results.push({type:'tool_result',tool_use_id:b.id,content:String(err&&err.message||err),is_error:true})}}
     msgs.push({role:'user',content:results})}
@@ -1448,7 +1541,7 @@ Responda SOMENTE com JSON válido, sem texto fora dele, neste formato:
 async function askAgent(cfg){
   const btn=$(cfg.btn),out=$(cfg.out),err=$(cfg.err),cp=$(cfg.copy);err.textContent='';
   const sample=await getSample();
-  if(!sample){err.textContent='O agente não está disponível nesta visualização. Abra a página no Claude para usá-lo.';return}
+  if(!sample){err.textContent='O agente precisa de uma chave de IA fora do Claude. Em Início → Assistente, abra “Usar o assistente fora do Claude” (a chave do Google Gemini é gratuita).';return}
   const label=btn.textContent;btn.disabled=true;btn.textContent='Analisando…';out.innerHTML='<span class="small">O agente está lendo os dados…</span>';
   const data=cfg.payload();
   try{
@@ -2592,7 +2685,7 @@ const CB_TOOLS=()=>{const N=draws.length,per=(i)=>{let de=i.de,ate=i.ate;if(i.ul
   execute:i=>{const ds=[...new Set(asArr(i.dezenas))];if(ds.length<15||ds.length>20)throw new Error('O jogo precisa ter de 15 a 20 dezenas.');const [de,ate]=per(i),S=toMask(ds),d=Array(16).fill(0);
     for(let c=de;c<=ate;c++)d[Math.min(15,pc32(draws[c-1]&S))]++;return {dezenas:ds.sort((a,b)=>a-b),de,ate,melhor_acerto_por_concurso:{15:d[15],14:d[14],13:d[13],12:d[12],11:d[11]},nota:ds.length>15?'Para jogos com mais de 15 dezenas, conta quantas das 15 sorteadas estavam no jogo.':''}}}]};
 async function askCb(q){q=(q||$('cbQ').value).trim();if(!q){$('cbErr').textContent='Escreva uma pergunta.';return}$('cbErr').textContent='';
-  const sample=await getSample();if(!sample){$('cbErr').textContent='O agente não está disponível nesta visualização. Abra a página no Claude para usá-lo.';return}
+  const sample=await getSample();if(!sample){$('cbErr').textContent='O agente precisa de uma chave de IA fora do Claude. Em Início → Assistente, abra “Usar o assistente fora do Claude” (a chave do Google Gemini é gratuita).';return}
   $('cbAsk').disabled=true;$('cbAsk').textContent='Calculando…';$('cbStop').hidden=false;$('cbAns').textContent='';$('cbLog').innerHTML='';
   const log=[];const tools=CB_TOOLS().map(t=>({...t,execute:async inp=>{const t0=performance.now();try{const r=t.execute(inp||{});log.push(`<div>✓ <b>${esc(t.name)}</b> <code>${esc(JSON.stringify(inp))}</code> (${Math.round(performance.now()-t0)} ms)</div>`);$('cbLog').innerHTML='<b>Cálculos feitos pelo agente:</b>'+log.join('');return r}catch(e){log.push(`<div>✗ <b>${esc(t.name)}</b>: ${esc(e.message)}</div>`);$('cbLog').innerHTML='<b>Cálculos feitos pelo agente:</b>'+log.join('');throw e}}}));
   const sys=`Você é o Agente de Combinações de um app da Lotofácil (15 dezenas sorteadas de 25; ${draws.length} concursos na base, o último é o ${draws.length}). Responda em português do Brasil, de forma direta. SEMPRE use as ferramentas para obter números; nunca invente ou estime contagens. Faça quantos cálculos forem necessários. Mostre o número encontrado e o previsto pela matemática. Seja honesto: frequência passada, atrasos e combinações não mudam a chance do próximo sorteio. Não indique dezenas como mais prováveis. Responda em texto simples, sem tabelas markdown.`;
@@ -2810,7 +2903,7 @@ function renderAs(){const N=draws.length,nm=AS.cfg.nome||'Robson';if(!st)render(
 $('asName').addEventListener('change',()=>{AS.cfg.nome=$('asName').value.trim().slice(0,30)||'Robson';asSave();renderAs()});
 $('asCrit').addEventListener('change',()=>{AS.cfg.crit=[...document.querySelectorAll('#asCrit input:checked')].map(x=>x.value);asSave()});
 async function asSendMsg(text){text=(text||$('asIn').value).trim();if(!text)return;$('asIn').value='';$('asErr').textContent='';
-  const sample=await getSample();if(!sample){$('asErr').textContent='Fora do Claude, o assistente precisa da sua chave da API: abra “Usar o assistente fora do Claude”.';return}
+  const sample=await getSample();if(!sample){$('asErr').textContent='Fora do Claude, o assistente precisa de uma chave de IA. Abra “Usar o assistente fora do Claude” logo abaixo: a chave do Google Gemini é gratuita.';return}
   asPush('me',text);const N=draws.length,nm=AS.cfg.nome||'Robson',bud=+$('asBud').value||null;
   const crit=AS.cfg.crit.map(k=>CRITS.find(c=>c[0]===k)[1]).join(', ')||'nenhum (montagem equilibrada)';
   const sys=`Você é o assistente pessoal de ${nm} num app de análise da Lotofácil (15 dezenas sorteadas de 25; cada jogo de 15 tem chance de 1 em 3.268.760 de fazer 15 pontos). Último concurso na base: ${N}. Próximo: ${N+1}. Orçamento informado hoje: ${bud?brl2(bud):'ainda não informado'}. Critérios escolhidos por ${nm}: ${crit}.
@@ -2833,9 +2926,14 @@ $('asSend').addEventListener('click',()=>asSendMsg());$('asStop').addEventListen
 $('asIn').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))asSendMsg()});
 $('asQR').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const m=b.textContent.match(/R\$\s*([\d.,]+)/);if(m)$('asBud').value=parseFloat(m[1].replace(',','.'));asSendMsg(b.textContent)});
 
-(function(){const c=apiCfg();if(c){$('apiModel').value=c.model||'claude-sonnet-5-5';$('apiSt').textContent='Chave salva neste navegador (termina em …'+String(c.key).slice(-4)+').'}
-  $('apiSave').addEventListener('click',()=>{const k=$('apiKey').value.trim();if(!k){$('apiSt').textContent='Cole a chave antes de salvar.';return}try{localStorage.setItem(API_K,JSON.stringify({key:k,model:$('apiModel').value.trim()||'claude-sonnet-5-5'}));$('apiKey').value='';$('apiSt').textContent='Chave salva neste navegador (termina em …'+k.slice(-4)+'). O assistente e os agentes já podem usá-la fora do Claude.'}catch(e){$('apiSt').textContent='Não foi possível salvar neste navegador.'}});
-  $('apiDel').addEventListener('click',()=>{try{localStorage.removeItem(API_K)}catch(e){}$('apiSt').textContent='Chave apagada deste navegador.'});})();
+(function(){const st=t=>$('apiSt').textContent=t,show=c=>{if(!c)return;$('apiProv').value=provOf(c);$('apiModel').value=c.model||'';st('Chave salva neste navegador ('+(provOf(c)==='gemini'?'Google Gemini':'Anthropic')+', termina em …'+String(c.key).slice(-4)+(c.model?', modelo '+c.model:'')+').')};show(apiCfg());
+  $('apiKey').addEventListener('input',()=>{const k=$('apiKey').value.trim();if(/^AIza/.test(k))$('apiProv').value='gemini';else if(/^sk-ant-/.test(k))$('apiProv').value='anthropic'});
+  $('apiSave').addEventListener('click',async()=>{const k=$('apiKey').value.trim(),prov=$('apiProv').value;if(!k){st('Cole a chave antes de salvar.');return}
+    let model=$('apiModel').value.trim();
+    if(prov==='gemini'){st('Testando a chave no Google…');try{if(!model||/^claude/.test(model))model=await gemPickModel(k)}catch(e){st(e.status===400||e.status===403?'O Google recusou a chave. Confira se copiou a chave inteira do Google AI Studio.':'Não consegui falar com o Google agora ('+e.message+'). Tente de novo.');return}}
+    else if(!model||/^gemini/.test(model))model='claude-sonnet-5-5';
+    try{localStorage.setItem(API_K,JSON.stringify({prov,key:k,model}));$('apiKey').value='';show(apiCfg());st($('apiSt').textContent+' O assistente e os agentes já podem usá-la.')}catch(e){st('Não foi possível salvar neste navegador.')}});
+  $('apiDel').addEventListener('click',()=>{try{localStorage.removeItem(API_K)}catch(e){}st('Chave apagada deste navegador.')});})();
 $('asNew').addEventListener('click',()=>{AS.hist=[];AS.plan=null;drawPlan();$('asLog').innerHTML='';renderAs()});
 
 // ---------- Plano automático (regras, sem IA) ----------
@@ -2908,7 +3006,7 @@ function renderResumo(){const N=draws.length,m=draws[N-1],prev=draws[N-2];
   $('rsCards').innerHTML=cards.map(c=>`<a class="card" href="#${c[0]==='repet'?'ausentes':c[0]}"><span class="k">${esc(c[1])}</span><b>${esc(c[2])}</b><span>${esc(c[3])}</span></a>`).join('');
 }
 async function askCoord(){const btn=$('rsAsk');$('rsErr').textContent='';
-  const sample=await getSample();if(!sample){$('rsErr').textContent='O agente não está disponível nesta visualização. Abra a página no Claude para usá-lo.';return}
+  const sample=await getSample();if(!sample){$('rsErr').textContent='O agente precisa de uma chave de IA fora do Claude. Em Início → Assistente, abra “Usar o assistente fora do Claude” (a chave do Google Gemini é gratuita).';return}
   btn.disabled=true;btn.textContent='Coordenando…';$('rsSteps').textContent='Reunindo os dados das ferramentas…';
   const dados={};for(const m of Object.keys(PAYLOADS)){try{ensureMod(m);dados[m]=PAYLOADS[m]()}catch(e){dados[m]={erro:'indisponível'}}}
   if(dados.posicoes)delete dados.posicoes.matriz_dezena_por_posicao;
@@ -2939,8 +3037,124 @@ $('rsApply').addEventListener('click',()=>{const sg=rsLast&&rsLast.resumo.sugest
   $('rsSteps').textContent=n+' filtro(s) aplicados. Eles já valem no gerador e na aba Filtros.'});
 bindCopy('rsCopy',()=>rsLast);
 
+// ---------- Avaliador de bolões ----------
+const BO_K='lf_boloes_v1',SORT_MES=26;
+let BO={list:[],concurso:null,premio:null,sel:-1,alvo:50,orc:30};
+try{const sv=JSON.parse(localStorage.getItem(BO_K)||'null');if(sv&&Array.isArray(sv.list))BO=Object.assign(BO,sv,{sel:-1})}catch(e){}
+const saveBo=()=>{try{localStorage.setItem(BO_K,JSON.stringify({list:BO.list,concurso:BO.concurso,premio:BO.premio,alvo:BO.alvo,orc:BO.orc}))}catch(e){}};
+const brlN=t=>+String(t).replace(/\./g,'').replace(',','.');
+function parseBoloes(txt){
+  const L=txt.split(/\r?\n|\t/).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const out=[];let concurso=null,premio=null;
+  const mc=txt.match(/concurso\s*(\d{4})/i);if(mc)concurso=+mc[1];
+  const mp=txt.match(/R\$\s*([\d.]+,\d{2})\s*\(?R\$\s*[\d,.]+\s*(?:Milh|Bilh|Mil)/i);if(mp)premio=brlN(mp[1]);
+  for(let i=0;i<L.length;i++){
+    const m=L[i].match(/^(\d+)\s+apostas?\s+de\s+(\d+)\s+dezenas?$/i);if(!m)continue;
+    const ap=+m[1],dz=+m[2];if(dz<15||dz>20||ap<1||ap>50)continue;
+    let lot='',cid='';const prev=L[i-1]||'',prev2=L[i-2]||'';
+    if(/\s-\s?[A-Z]{2}$/.test(prev)){cid=prev;lot=prev2}else lot=prev;
+    if(/concurso|R\$|Milh/i.test(lot))lot='';
+    let disp=null,tot=null,pr=null;
+    for(let k=i+1;k<Math.min(L.length,i+8);k++){
+      const c=L[k].match(/(\d+)\s+cotas?\s+dispon\S*\s+de\s+(\d+)/i);if(c&&tot==null){disp=+c[1];tot=+c[2];continue}
+      const r=L[k].match(/^R\$\s*([\d.]+,\d{2})$/);if(r&&tot!=null){pr=brlN(r[1]);break}
+      if(/apostas?\s+de\s+\d+\s+dezenas/i.test(L[k]))break}
+    if(tot&&pr)out.push({lot:lot.slice(0,60),cid:cid.slice(0,60),ap,dz,tot,disp,pr})}
+  return{out,concurso,premio}}
+const boShare=(dz,tot,h,P)=>R(11,15).reduce((s,k)=>s+subCount(dz,h,k)*P[k],0)/tot;
+function rnd15(){const a=R(1,25);let m=0;for(let i=0;i<15;i++){const j=i+Math.floor(Math.random()*(25-i));[a[i],a[j]]=[a[j],a[i]];m|=1<<(a[i]-1)}return m}
+const BO_MC=new Map();
+function boStats(b){
+  const P=prize(),c15=comb(b.dz,15),total=b.ap*c15*P.a,base=total/b.tot,alvo=BO.alvo,eq=b.ap*c15/b.tot;
+  const sh=R(0,15).map(h=>boShare(b.dz,b.tot,h,P));
+  let r={P,total,base,taxa:b.pr-base,taxaPct:base>0?(b.pr-base)/base:0,eq,porJogo:b.pr/eq,sh};
+  if(b.jg&&b.jg.length===b.ap){
+    const key=JSON.stringify([b.jg,b.tot,b.dz,alvo,P]);let c=BO_MC.get(key);
+    if(!c){const N=40000;let nA=0,nAny=0,sA=0,sum=0;
+      for(let i=0;i<N;i++){const m=rnd15();let v=0;for(const g of b.jg)v+=sh[pc32(m&g)];sum+=v;if(v>0)nAny++;if(v>=alvo-1e-9){nA++;sA+=v}}
+      let hA=0,hAny=0,hS=0,best=0;for(const m of MASKS){let v=0;for(const g of b.jg)v+=sh[pc32(m&g)];hS+=v;if(v>0)hAny++;if(v>=alvo-1e-9)hA++;if(v>best)best=v}
+      c={pAlvo:nA/N,pAny:nAny/N,medA:nA?sA/nA:0,ev:sum/N,hist:{n:MASKS.length,hA,hAny,hS,best}};BO_MC.set(key,c)}
+    Object.assign(r,c,{modo:'teste'})}
+  else{let p1=0,s1=0,pAny1=0,ev1=0;for(let h=11;h<=15;h++){const q=hyper(b.dz,h);pAny1+=q;ev1+=q*sh[h];if(sh[h]>=alvo-1e-9){p1+=q;s1+=q*sh[h]}}
+    Object.assign(r,{pAlvo:1-Math.pow(1-p1,b.ap),pAny:1-Math.pow(1-pAny1,b.ap),medA:p1?s1/p1:0,ev:b.ap*ev1,modo:b.ap>1?'estimativa':'exato'})}
+  r.custoVez=r.pAlvo>0?b.pr/r.pAlvo:Infinity;r.mes=1-Math.pow(1-r.pAlvo,SORT_MES);r.ret=r.ev/b.pr;
+  return r}
+const cadaN=p=>p<=0?'nunca':p>=1?'todo concurso':'1 vez a cada '+(1/p<10?fmt(1/p,1):Math.round(1/p).toLocaleString('pt-BR'))+' concursos';
+const pctF=p=>p<=0?'0%':fmt(p*100,p<0.001?4:p<0.01?3:p<0.1?2:1)+'%';
+function boSimples(orc){const P=prize(),n=Math.floor(orc/P.a+1e-9);if(n<1)return null;let p1=0;for(let h=11;h<=15;h++)if(P[h]>=BO.alvo-1e-9)p1+=hyper(15,h);const p=1-Math.pow(1-p1,n);return{n,custo:n*P.a,p}}
+function renderBo(){
+  $('boAlvo').value=BO.alvo;$('boOrc').value=BO.orc;
+  const L=BO.list.map((b,i)=>({b,i,c:boStats(b)})).sort((x,y)=>x.c.custoVez-y.c.custoVez||y.c.pAlvo-x.c.pAlvo);
+  $('boHonest').innerHTML='<b>Como o app testa:</b> para cada bolão ele calcula a sua fatia em cada pontuação e a chance de ela chegar a pelo menos '+fmtBRL(BO.alvo)+'. Com as dezenas do bolão (aba Detalhes da Caixa), ele também simula 40 mil sorteios e confere os '+MASKS.length.toLocaleString('pt-BR')+' concursos passados. A frequência depende do formato, das cotas e do preço; as dezenas escolhidas não mudam a chance. Na média, todo bolão devolve menos do que custa.';
+  if(!L.length){$('boHead').textContent='Nenhum bolão lido ainda';['boBest','boBestS'].forEach(x=>$(x).textContent='');$('boK').innerHTML='';$('boT').innerHTML='';$('boDet').innerHTML='';$('boCart').innerHTML='<p class="lead">Traga os bolões da Caixa (passo 1) para montar a carteira.</p>';$('boLead').textContent='';return}
+  if(!BO.list[BO.sel])BO.sel=L[0].i;
+  const B=L[0],val=L.filter(x=>x.c.pAlvo>0);
+  $('boHead').textContent=L.length+' bolões testados'+(BO.concurso?' (concurso '+BO.concurso+')':'')+'. O mais barato para receber pelo menos '+fmtBRL(BO.alvo)+':';
+  if(!val.length){$('boBest').textContent='Nenhum bolão paga '+fmtBRL(BO.alvo)+' por cota';$('boBestS').textContent='Diminua o valor em “Quero receber pelo menos”.';$('boK').innerHTML=''}
+  else{$('boBest').textContent=(B.b.lot||'Bolão')+': '+B.b.ap+'×'+B.b.dz+' dezenas';
+    $('boBestS').textContent=fmtBRL(B.b.pr)+' a cota, '+B.b.tot+' cotas'+(B.b.disp!=null?' ('+B.b.disp+' disponíveis)':'')+(B.b.cid?' · '+B.b.cid:'');
+    $('boK').innerHTML=[[cadaN(B.c.pAlvo),'recebe pelo menos '+fmtBRL(BO.alvo)+' ('+pctF(B.c.pAlvo)+' por concurso)'],[fmtBRL(B.c.custoVez),'custo médio por vez que recebe'],[fmtBRL(B.c.medA),'quanto recebe em média nessas vezes'],[cadaN(B.c.pAny),'recebe qualquer valor']]
+      .map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}
+  // carteira
+  let gasto=0,pick=[];for(const x of val){if(x.b.disp===0)continue;if(gasto+x.b.pr<=BO.orc+1e-9){pick.push(x);gasto+=x.b.pr}}
+  if(!pick.length)$('boCart').innerHTML='<p class="lead">Com '+fmtBRL(BO.orc)+' não cabe nenhuma cota que pague pelo menos '+fmtBRL(BO.alvo)+'. Aumente o gasto ou diminua o valor que quer receber.</p>';
+  else{const pNada=pick.reduce((s,x)=>s*(1-x.c.pAlvo),1),pUm=1-pNada,ev=pick.reduce((s,x)=>s+x.c.ev,0),vezes=pick.reduce((s,x)=>s+x.c.pAlvo,0),S=boSimples(gasto);
+    $('boCart').innerHTML=`<div class="slip"><p class="lead" style="margin-top:0">O app escolheu ${pick.length} cota${pick.length>1?'s':''} de bolões diferentes, dos mais baratos por vez que você recebe, até ${fmtBRL(BO.orc)}. Espalhar em bolões diferentes aumenta a frequência.</p>
+    <div class="scroll"><table class="stack"><thead><tr><th>Lotérica</th><th>Bolão</th><th class="num">Cota</th><th class="num">Recebe ≥ ${esc(fmtBRL(BO.alvo))}</th><th class="num">Em média recebe</th></tr></thead><tbody>${pick.map(x=>`<tr><td>${esc(x.b.lot||'—')}${x.b.cid?'<br><span class="small">'+esc(x.b.cid)+'</span>':''}</td><td>${x.b.ap} × ${x.b.dz} dezenas, ${x.b.tot} cotas</td><td class="num">${fmtBRL(x.b.pr)}</td><td class="num">${pctF(x.c.pAlvo)}</td><td class="num">${fmtBRL(x.c.medA)}</td></tr>`).join('')}</tbody></table></div>
+    <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-top:14px">${[[fmtBRL(gasto),'gasto neste concurso'],[pctF(pUm),'chance de receber pelo menos '+fmtBRL(BO.alvo)+' em alguma cota'],[vezes*SORT_MES>=1?fmt(vezes*SORT_MES,1)+' vezes por mês':'1 vez a cada '+fmt(1/(vezes*SORT_MES),1)+' meses','recebendo pelo menos '+fmtBRL(BO.alvo)+', jogando assim todo concurso ('+fmtBRL(gasto*SORT_MES)+' por mês)'],[fmtBRL(ev*SORT_MES),'retorno médio no mês ('+fmt(ev/gasto*100,0)+'% do gasto)']].map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
+    <p class="small" style="margin-top:10px">${S?'Comparação: os mesmos '+fmtBRL(S.custo)+' em '+S.n+' apostas simples dariam '+pctF(S.p)+' de chance de receber pelo menos '+fmtBRL(BO.alvo)+' por concurso, mas quando acerta o prêmio é inteiro seu. ':''}A chance da carteira supõe bolões com dezenas diferentes. Comprar as cotas é com você, no site da Caixa.</p></div>`}
+  $('boLead').textContent='Retorno médio usa os prêmios do Gerador (11 = '+fmtBRL(prize()[11])+', 12 = '+fmtBRL(prize()[12])+', 13 = '+fmtBRL(prize()[13])+', 14 ≈ '+fmtBRL(prize()[14])+', 15 ≈ '+fmtBRL(prize()[15])+'). “Estimativa” = bolão de várias apostas sem as dezenas informadas; “testado” = dezenas coladas e simuladas.';
+  $('boT').innerHTML='<thead><tr><th>#</th><th>Lotérica</th><th>Bolão</th><th class="num">Cota</th><th class="num">Taxa</th><th class="num">Recebe ≥ alvo</th><th class="num">Custo por vez</th><th class="num">Média quando recebe</th><th class="num">Recebe algo</th><th class="num">Retorno médio</th><th>Cálculo</th><th></th></tr></thead><tbody>'+
+    L.map((x,r)=>`<tr${x.i===BO.sel?' style="background:var(--pur2)"':''}><td>${r+1}º</td><td>${esc(x.b.lot||'—')}${x.b.cid?'<br><span class="small">'+esc(x.b.cid)+'</span>':''}</td><td>${x.b.ap} × ${x.b.dz} dezenas<br><span class="small">${x.b.disp!=null?x.b.disp+' de ':''}${x.b.tot} cotas</span></td><td class="num">${fmtBRL(x.b.pr)}</td><td class="num">${fmt(x.c.taxaPct*100,0)}%</td><td class="num">${pctF(x.c.pAlvo)}<br><span class="small">${esc(cadaN(x.c.pAlvo))}</span></td><td class="num"><b>${isFinite(x.c.custoVez)?fmtBRL(x.c.custoVez):'—'}</b></td><td class="num">${x.c.medA?fmtBRL(x.c.medA):'—'}</td><td class="num">${pctF(x.c.pAny)}</td><td class="num">${fmt(x.c.ret*100,0)}%</td><td>${x.c.modo}</td><td><button class="ghost" data-bo="${x.i}" style="min-height:32px;padding:0 10px;font-size:13px">Detalhes</button> <button class="ghost" data-bx="${x.i}" aria-label="Remover" style="min-height:32px;padding:0 10px;font-size:13px">✕</button></td></tr>`).join('')+'</tbody>';
+  boDetail()}
+function boDetail(){const b=BO.list[BO.sel];if(!b){$('boDet').innerHTML='';return}const c=boStats(b);
+  const rows=R(11,15).reverse().map(h=>`<tr><td>Uma aposta do bolão acerta ${h}</td><td class="num">${fmtBRL(c.sh[h])}</td><td class="num">${umEm(hyper(b.dz,h))}</td></tr>`).join('');
+  const H=c.hist;
+  $('boDet').innerHTML=`<div class="slip"><h3 style="margin-top:0">${esc(b.lot||'Bolão')}: ${b.ap} aposta${b.ap>1?'s':''} de ${b.dz} dezenas, ${b.tot} cotas, ${fmtBRL(b.pr)}</h3>
+  <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${[[fmtBRL(c.total),'valor total do bolão'],[fmtBRL(c.base),'cota sem taxa'],[fmt(c.taxaPct*100,0)+'%','taxa'],[fmt(c.eq,2),'jogos simples equivalentes na cota']].map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
+  <p class="lead" style="margin-top:14px">Sua fatia com 1 cota, conforme o acerto de uma aposta do bolão (prêmios de 14 e 15 são estimativas):</p>
+  <div class="scroll"><table class="stack"><thead><tr><th>Se…</th><th class="num">Sua parte (1 cota)</th><th class="num">Chance de cada aposta</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <h4 style="margin:18px 0 6px">Testar com as dezenas do bolão</h4>
+  <p class="small" style="margin:0 0 6px">Na Caixa, clique em “Detalhes” do bolão, copie as dezenas ${b.ap>1?'das '+b.ap+' apostas':'da aposta'} (${b.ap*b.dz} números ao todo) e cole aqui.</p>
+  <textarea id="boJgT" rows="3" style="width:100%" placeholder="Ex.: 01 02 03 05 07 …">${b.jg?esc(b.jg.map(m=>fromMask(m).map(p2).join(' ')).join('\n')):''}</textarea>
+  <div class="formrow"><button id="boJgB">Testar</button></div><div class="err" id="boJgE"></div>
+  ${H?`<div class="note" style="margin-top:10px"><b>Resultado do teste:</b> em 40 mil sorteios simulados, recebeu pelo menos ${esc(fmtBRL(BO.alvo))} em ${pctF(c.pAlvo)} deles e algum valor em ${pctF(c.pAny)}. Nos ${H.n.toLocaleString('pt-BR')} concursos reais, teria recebido pelo menos ${esc(fmtBRL(BO.alvo))} ${H.hA.toLocaleString('pt-BR')} vezes (${pctF(H.hA/H.n)}) e algum valor ${H.hAny.toLocaleString('pt-BR')} vezes. Comprando 1 cota em todos eles, teria pago ${esc(fmtBRL(b.pr*H.n))} e recebido ${esc(fmtBRL(H.hS))} (${fmt(H.hS/(b.pr*H.n)*100,0)}%). Maior fatia: ${esc(fmtBRL(H.best))}.</div>`:''}
+  <p class="small" style="margin-top:10px">Montar este mesmo bolão com amigos e registrar na lotérica não tem taxa de serviço: a cota sairia ${fmtBRL(c.base)} em vez de ${fmtBRL(b.pr)}.</p></div>`;
+  $('boJgB').addEventListener('click',()=>{const nums=($('boJgT').value.match(/\d{1,2}/g)||[]).map(Number);
+    if(nums.length!==b.ap*b.dz||nums.some(n=>n<1||n>25)){$('boJgE').textContent='Encontrei '+nums.length+' números; este bolão precisa de '+b.ap*b.dz+' ('+b.ap+' × '+b.dz+'), todos de 01 a 25.';return}
+    const jg=[];for(let i=0;i<b.ap;i++){const g=nums.slice(i*b.dz,(i+1)*b.dz);if(new Set(g).size!==b.dz){$('boJgE').textContent='A aposta '+(i+1)+' tem dezena repetida.';return}jg.push(toMask(g))}
+    b.jg=jg;saveBo();renderBo()})}
+function boIngest(t){const r=parseBoloes(t);if(!r.out.length)return 0;BO.list=r.out;BO.concurso=r.concurso||BO.concurso;BO.premio=r.premio||BO.premio;BO.sel=-1;saveBo();return r.out.length}
+$('boRead').addEventListener('click',()=>{$('boErr').textContent='';const t=$('boTxt').value;if(!t.trim()){$('boErr').textContent='Cole primeiro o texto da página de bolões.';return}
+  const n=boIngest(t);if(!n){$('boErr').textContent='Não encontrei bolões no texto. Confira se copiou a página inteira, com os cartões dos bolões aparecendo.';return}
+  $('boTxt').value='';$('boErr').innerHTML='<span style="color:var(--ink)">Li '+n+' bolões.</span>';renderBo()});
+$('boAdd').addEventListener('click',()=>{const ap=+$('boAp').value,dz=+$('boDz').value,tot=+$('boCt').value,pr=+String($('boPr').value).replace(',','.');
+  if(!(ap>=1&&tot>=2&&pr>0)){$('boErr').textContent='Preencha apostas, total de cotas e preço da cota.';return}
+  BO.list.push({lot:$('boLot').value.trim().slice(0,60),cid:'',ap,dz,tot,disp:null,pr});BO.sel=BO.list.length-1;saveBo();$('boErr').textContent='';renderBo()});
+$('boClr').addEventListener('click',()=>{BO.list=[];BO.concurso=null;BO.premio=null;BO.sel=-1;saveBo();$('boErr').textContent='';renderBo()});
+$('boT').addEventListener('click',e=>{const d=e.target.closest('[data-bo]'),x=e.target.closest('[data-bx]');
+  if(d){BO.sel=+d.dataset.bo;renderBo();$('boDet').scrollIntoView({behavior:'smooth',block:'start'})}
+  if(x){BO.list.splice(+x.dataset.bx,1);BO.sel=-1;saveBo();renderBo()}});
+['boAlvo','boOrc'].forEach(id=>$(id).addEventListener('change',()=>{const v=+$(id).value;if(v>=0){if(id==='boAlvo')BO.alvo=Math.max(1,v);else BO.orc=v;saveBo();renderBo()}}));
+// Botão de favoritos (Mac e iPhone): na página da Caixa, rola até o fim, lê os bolões e abre o app com a lista no endereço (#boloes=...).
+// Nada passa por servidor: a lista vai só no próprio link, dentro do aparelho.
+const BO_APP=location.origin+location.pathname;
+const BO_BM=`(async()=>{if(!/(^|\\.)caixa\\.gov\\.br$/.test(location.hostname)){alert('Abra a página de bolões da Lotofácil no site da Caixa e use o favorito de novo.');return}let h=0;for(let i=0;i<25;i++){scrollTo(0,document.body.scrollHeight);await new Promise(r=>setTimeout(r,800));if(document.body.scrollHeight===h)break;h=document.body.scrollHeight}const t=document.body.innerText,L=t.split(/\\r?\\n|\\t/).map(x=>x.replace(/\\s+/g,' ').trim()).filter(Boolean),o=[];for(let i=0;i<L.length;i++){const m=L[i].match(/^(\\d+)\\s+apostas?\\s+de\\s+(\\d+)\\s+dezenas?$/i);if(!m)continue;const p=L[i-1]||'',q=L[i-2]||'';let lot=p,cid='';if(/\\s-\\s?[A-Z]{2}$/.test(p)){cid=p;lot=q}if(/concurso|R\\$|Milh/i.test(lot))lot='';let d=null,tt=null,pr=null;for(let k=i+1;k<Math.min(L.length,i+8);k++){const c=L[k].match(/(\\d+)\\s+cotas?\\s+dispon\\S*\\s+de\\s+(\\d+)/i);if(c&&tt==null){d=+c[1];tt=+c[2];continue}const r=L[k].match(/^R\\$\\s*([\\d.]+,\\d{2})$/);if(r&&tt!=null){pr=+r[1].replace(/\\./g,'').replace(',','.');break}if(/apostas?\\s+de\\s+\\d+\\s+dezenas/i.test(L[k]))break}if(tt&&pr)o.push([lot.slice(0,40),cid.slice(0,40),+m[1],+m[2],tt,d,pr])}if(!o.length){alert('Não encontrei bolões. Abra Bolões > lotofácil no site da Caixa e use o favorito de novo.');return}const mc=t.match(/concurso\\s*(\\d{4})/i);location.href=${JSON.stringify(BO_APP)}+'#boloes='+encodeURIComponent(JSON.stringify({c:mc?+mc[1]:null,b:o}))})()`;
+(function(){const a=$('boBm'),web=/^https?:$/.test(location.protocol);
+  if(web)a.href='javascript:'+encodeURIComponent(BO_BM);else{a.removeAttribute('href');a.style.opacity=.5;a.title='Disponível na versão publicada no GitHub'}
+  a.addEventListener('click',e=>{e.preventDefault();$('boErr').innerHTML='<span style="color:var(--ink)">Esse botão não funciona clicando aqui: arraste-o para a barra de favoritos do Chrome e use na página de bolões da Caixa. No iPhone, use “Copiar código para o iPhone”.</span>'});
+  $('boCopy').addEventListener('click',async()=>{if(!web){$('boErr').textContent='Disponível na versão publicada no GitHub.';return}const code='javascript:'+BO_BM;
+    try{await navigator.clipboard.writeText(code);$('boErr').innerHTML='<span style="color:var(--ink)">Código copiado. Agora siga os passos do iPhone logo abaixo.</span>'}
+    catch(e){$('boCode').hidden=false;$('boCode').value=code;$('boCode').select();$('boErr').innerHTML='<span style="color:var(--ink)">Toque e segure no quadro abaixo e escolha “Copiar”.</span>'}})})();
+// Recebe a lista vinda do favorito
+(function(){const m=location.hash.match(/^#boloes=(.+)$/);if(!m)return;let n=0;
+  try{const d=JSON.parse(decodeURIComponent(m[1]));const ok=x=>Array.isArray(x)&&x.length===7&&+x[2]>=1&&+x[2]<=50&&+x[3]>=15&&+x[3]<=20&&+x[4]>=2&&+x[4]<=1000&&+x[6]>0&&+x[6]<1e5;
+    const L=(Array.isArray(d.b)?d.b:[]).filter(ok).slice(0,2000).map(x=>({lot:String(x[0]).slice(0,60),cid:String(x[1]).slice(0,60),ap:+x[2],dz:+x[3],tot:+x[4],disp:x[5]==null?null:+x[5],pr:+x[6]}));
+    if(L.length){BO.list=L;BO.concurso=+d.c||BO.concurso;BO.sel=-1;saveBo();n=L.length}}catch(e){}
+  history.replaceState(null,'',location.pathname+location.search+'#boloes');
+  $('boErr').innerHTML=n?'<span style="color:var(--ink)">Li '+n+' bolões direto da Caixa.</span>':'Não consegui ler a lista que veio da Caixa. Tente de novo pelo favorito.'})();
 // ---------- navegação ----------
-const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:renderMt,assistente:renderAs,calc:renderCl,ciclos:()=>{}};
+const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:renderMt,assistente:renderAs,calc:renderCl,boloes:renderBo,ciclos:()=>{}};
 let DIRTY=new Set(Object.keys(RENDERS));
 function renderAll(){render();cst=null;DIRTY=new Set(Object.keys(RENDERS));const m=curMod();if(RENDERS[m]){DIRTY.delete(m);RENDERS[m]()}}
 const GROUPS=[
@@ -2949,7 +3163,7 @@ const GROUPS=[
  ['dezenas','Dezenas',[['frequencia','Frequência'],['comportamento','Comportamento'],['analise','Sequências e atrasos'],['ciclos','Ciclos']]],
  ['padroes-g','Padrões',[['padroes','Pares, primos e grupos'],['soma','Soma'],['linhas','Linhas e colunas'],['naipes','Naipes'],['sequencias','Sequências e saltos'],['posicoes','Posições'],['pareto','Pareto']]],
  ['comb','Combinações',[['combinar','Simulador de combinações'],['trincas','Duplas e trincas'],['duques','Afinidade (duques)']]],
- ['jogos','Jogos',[['montar','Montar jogo e testar'],['gerador','Gerador e fechamentos'],['calc','Calculadora de probabilidades'],['filtros','Filtros']]]];
+ ['jogos','Jogos',[['montar','Montar jogo e testar'],['gerador','Gerador e fechamentos'],['calc','Calculadora de probabilidades'],['boloes','Avaliador de bolões'],['filtros','Filtros']]]];
 const ALLMODS=GROUPS.flatMap(g=>g[2].map(x=>x[0]));
 function curMod(){const h=location.hash.slice(1);return ALLMODS.includes(h)&&document.getElementById('m-'+h)?h:(document.getElementById('m-assistente')?'assistente':'resumo')}
 $('gnav').innerHTML=GROUPS.map(g=>`<a href="#${g[2][0][0]}" data-g="${g[0]}">${esc(g[1])}</a>`).join('');

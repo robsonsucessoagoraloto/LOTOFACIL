@@ -1,6 +1,6 @@
 // Service worker do app Lotofácil: guarda uma cópia para funcionar sem internet.
 // Sempre tenta a internet primeiro (para pegar resultados novos) e usa a cópia só se estiver offline.
-const CACHE = 'lotofacil-v1';
+const CACHE = 'lotofacil-v2';
 const BASE = ['./', './index.html', './resultados.json', './manifest.webmanifest',
   './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png', './favicon.png'];
 
@@ -30,7 +30,8 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  e.respondWith(fetch(req).then(r => {             // arquivos do app: internet primeiro
+  // arquivos do app: internet primeiro, sem usar cópia velha do navegador (versões novas aparecem na hora)
+  e.respondWith(fetch(url.href, {cache: 'no-cache', credentials: 'same-origin'}).then(r => {
     if (r.ok) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); }
     return r;
   }).catch(async () => {

@@ -3095,7 +3095,31 @@ function mostrarMelhor(force){const N=draws.length,bud=+$('asBud').value||AS.cfg
     <details><summary class="small">Testes feitos nas ferramentas</summary><ul class="small" style="margin:6px 0">${testarJogos(c.plan.games).map(t=>'<li>'+esc(t)+'</li>').join('')}</ul></details>
     <p class="small" style="margin:8px 0 0">Testado em 20 mil sorteios simulados. Os jogos estão no quadro do plano. <button class="ghost" id="mbRe" style="min-height:32px;padding:0 10px;font-size:13px">Recalcular</button></p></div>`;
   $('mbRe').onclick=()=>mostrarMelhor(true)}
-async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.cfg.nome||'Robson';
+// Leitor de português: tira acentos, entende números por extenso, gírias, sinônimos e pequenos erros de digitação.
+const PT_UN={um:1,uma:1,dois:2,duas:2,tres:3,quatro:4,cinco:5,seis:6,sete:7,oito:8,nove:9,dez:10,onze:11,doze:12,treze:13,quatorze:14,catorze:14,quinze:15,dezesseis:16,dezessete:17,dezoito:18,dezenove:19},
+  PT_DEZ={vinte:20,trinta:30,quarenta:40,cinquenta:50,sessenta:60,setenta:70,oitenta:80,noventa:90},PT_CEN={cem:100,cento:100,duzentos:200,trezentos:300,quatrocentos:400,quinhentos:500,seiscentos:600,setecentos:700,oitocentos:800,novecentos:900};
+const PT_KEYS=['calendario','cobertura','teimosinha','garantia','fechamento','matriz','painel','vigia','popular','populares','dezenas','jogos','fixar','tirar','gastar','orcamento','otimizar','otimiza','mensal','quanto','gastei','espalhar','espalhamento'];
+function lev(a,b){const m=a.length,n=b.length;if(Math.abs(m-n)>2)return 9;let p=R(0,n),c=[];for(let i=1;i<=m;i++){c=[i];for(let k=1;k<=n;k++)c[k]=Math.min(p[k]+1,c[k-1]+1,p[k-1]+(a[i-1]===b[k-1]?0:1));p=c}return p[n]}
+function normPT(t){let s=' '+String(t).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()+' ';
+  s=s.replace(/[a-z]{5,}/g,w=>{if(PT_KEYS.includes(w))return w;let best=w,bd=9;for(const k of PT_KEYS){const d=lev(w,k);if(d<bd){bd=d;best=k}}return bd<=(w.length>=9?2:1)?best:w});
+  const un='(um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove)';
+  s=s.replace(new RegExp('\\b(vinte|trinta|quarenta|cinquenta|sessenta|setenta|oitenta|noventa)(?: e '+un+')?\\b','g'),(x,d,u)=>String(PT_DEZ[d]+(u?PT_UN[u]:0)));
+  s=s.replace(/\b(um|uma|dois|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze|treze|quatorze|catorze|quinze|dezesseis|dezessete|dezoito|dezenove)\b/g,x=>String(PT_UN[x]));
+  s=s.replace(/\b(cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos)(?: e (\d{1,2}))?\b/g,(x,c,r)=>String(PT_CEN[c]+(r?+r:0)));
+  s=s.replace(/\b(conto|contos|pila|pilas|mango|mangos|real|reais|pratas?)\b/g,'reais').replace(/\b(cartoes|cartao|cartelas?|volantes?|bilhetes?|joguinhos?|apostinhas?)\b/g,'jogos');
+  s=s.replace(/\b(deixa|deixar|deixe|deixando)( de)? fora( (o|a|os|as))?\b/g,'tirar').replace(/\b(evita|evitar|evite|evitando)\b/g,'tirar').replace(/\b(fixa|fixando|fixe|mantem|mantenha|mantendo|com o|com a)\b(?= (o |a |os |as )?\d)/g,'fixar').replace(/\b(sem o|sem a|sem os|sem as)\b(?= \d)/g,'tirar').replace(/\bnao (quero|coloca|coloque|bota|bote)( (o|a|os|as))?\b/g,'tirar').replace(/\b(exclui|excluir|remove|remover|tira|tire)\b/g,'tirar');
+  s=s.replace(/\b(trava|travar|trave|coloca sempre|coloque sempre|bota sempre|sempre com)\b/g,'fixar');
+  s=s.replace(/\b(uns|umas|cerca de|mais ou menos|no maximo|ate)\s+(?=r?\$?\s*\d)/g,'').replace(/\br\s?\$\s*/g,'R$ ').replace(/\brs\s*(?=\d)/g,'R$ ');
+  s=s.replace(/\b(o|a|os|as|e o|e a)\s+(?=\d)/g,m=>m.startsWith('e')?'e ':'');
+  return s.replace(/\s+/g,' ').trim()}
+function cmdFromAI(j){const ns=a=>Array.isArray(a)?a.filter(d=>+d>=1&&+d<=25).map(d=>p2(+d)).join(' '):'',p=[];
+  const fx=ns(j.fixas),ex=ns(j.excluidas),v=+j.valor||0,Q=+j.jogos||0,n=+j.dezenas_por_jogo||0,g=+j.garantia||0;
+  if(j.acao==='painel')return 'quanto gastei';if(j.acao==='vigia')return 'vigia do sorteio';if(j.acao==='popularidade')return 'os jogos sao populares?';
+  if(j.acao==='calendario')return 'calendario com R$ '+(+j.valor_mensal||v)+' no mes';
+  if(j.acao==='cobertura')p.push('cobertura com '+(Q?Q+' jogos':v?'R$ '+v:''));
+  else{if(v)p.push('quero gastar R$ '+v);if(j.formato==='matriz'&&n)p.push(Q?Q+' jogos com '+n+' dezenas':'matriz de '+n+' dezenas');else if(j.formato==='garantia'||g)p.push('fechamento'+(n?' de '+n+' dezenas':'')+(g?' com garantia de '+g:''));else if(Q)p.push(Q+' jogos'+(n&&n!==15?' de '+n+' dezenas':''));else if(n&&n>15)p.push('1 jogos de '+n+' dezenas')}
+  if(fx)p.push('fixar '+fx);if(ex)p.push('tirar '+ex);return p.join(' ').trim()}
+async function asFast(text,sample,opt){opt=opt||{};const orig=text;if(!opt.noEcho)asPush('me',text);text=normPT(text);const N=draws.length,nm=AS.cfg.nome||'Robson';
   const nums=x=>(x.match(/\d{1,2}/g)||[]).map(Number).filter(v=>v>=1&&v<=25),o={};let m;
   if(m=text.match(/(\d{1,3})\s*(?:jogos|jogo|apostas|aposta|cart[õo]es|volantes)\b/i))o.Q=+m[1];
   if(m=text.match(/(1[5-9]|20)\s*dezenas/i))o.n=+m[1];
@@ -3113,7 +3137,7 @@ async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.
   if(/calend[aá]rio|or[çc]amento do m[eê]s|por m[eê]s|mensal/i.test(text)){const v=(text.match(/(\d+(?:[.,]\d{1,2})?)/)||[])[1];if(!v){asPush('ai','Quanto você quer gastar no mês? Ex.: “calendário com R$ 300 no mês”.');return}const C=calendario(parseFloat(v.replace(',','.')));
     asPush('ai','Calendário para '+brl2(C.B)+' no mês (próximos 26 concursos):\n'+C.lista.filter(x=>x.jogos>0).map(x=>'• '+x.c+' ('+x.tipo+'): '+x.jogos+' jogo(s), '+brl2(x.v)).join('\n')+'\n\nRetorno médio esperado: '+brl2(C.evCal)+', contra '+brl2(C.flat)+' gastando igual todo concurso. Detalhes em Início → Meu dinheiro.');return}
   if(/popular|dividir o pr[eê]mio|divis[aã]o/i.test(text)){if(!AS.plan||!AS.plan.games){asPush('ai','Monte um plano primeiro (ex.: “quero gastar R$ 30”) e eu avalio a popularidade dos jogos.');return}const ps=AS.plan.games.map(popScore);asPush('ai','Popularidade dos '+ps.length+' jogos do plano:\n'+ps.map((x,i)=>'• Jogo '+(i+1)+': '+x.nivel+(x.why.length?' ('+x.why.join(', ')+')':'')).join('\n'));return}
-  if(/cobertura|otimiz|espalh/i.test(text)){const P=prize(),mv=text.match(/R\$\s*(\d+(?:[.,]\d{1,2})?)/i);if(mv)$('asBud').value=parseFloat(mv[1].replace(',','.'));const Q=o.Q||Math.floor((+$('asBud').value||0)/P.a+1e-9);if(!Q){AS.pediuValor=true;asPush('ai','Quanto quer gastar (ou quantos jogos)? Ex.: “cobertura com R$ 35” ou “cobertura com 10 jogos”.');return}
+  if(/cobertura|otimiz|espalh/i.test(text)){const P=prize(),mv=text.match(/R\$\s*(\d+(?:[.,]\d{1,2})?)/i)||text.match(/(\d+(?:[.,]\d{1,2})?)\s*reais/i);if(mv)$('asBud').value=parseFloat(mv[1].replace(',','.'));const Q=o.Q||Math.floor((+$('asBud').value||0)/P.a+1e-9);if(!Q){AS.pediuValor=true;asPush('ai','Quanto quer gastar (ou quantos jogos)? Ex.: “cobertura com R$ 35” ou “cobertura com 10 jogos”.');return}
     const r=otimizarCobertura(Q,{fx:o.fx,ex:o.rm});AS.plan={games:r.games,n:15,desc:'Cobertura otimizada: '+r.games.length+' jogos',titulo:'Cobertura otimizada do concurso '+(N+1),just:'',custo:r.games.length*P.a};AS.lastGen={games:r.games,n:15,desc:AS.plan.desc};drawPlan();
     asPush('ai','Montei '+r.games.length+' jogos de 15 com o otimizador de cobertura ('+brl2(r.games.length*P.a)+'). Em 20 mil sorteios simulados, dão prêmio em '+pctF(r.pAny)+' deles (jogos ao acaso: '+pctF(r.rndAny)+') e chegam a 13+ em '+pctF(r.p13)+' (ao acaso: '+pctF(r.rnd13)+').\n\nTestes:\n'+testarJogos(r.games).join('\n')+'\n\nOs jogos estão no quadro do plano.');return}
   const soNum=/^\s*(?:r\$\s*)?\d+(?:[.,]\d{1,2})?\s*(?:reais)?\s*$/i.test(text);const mB=soNum||AS.pediuValor&&!temOrdem&&/\d/.test(text)?text.match(/(\d+(?:[.,]\d{1,2})?)/):text.match(/(?:R\$\s*|gastar\s*|or[çc]amento\s*(?:de\s*)?)(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*reais/i);AS.pediuValor=false;if(mB){$('asBud').value=parseFloat((mB[1]||mB[2]).replace(',','.'));try{AS.cfg.bud=+$('asBud').value;asSave()}catch(e){}}
@@ -3130,15 +3154,19 @@ async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.
     const ent=[o.Q?o.Q+' jogos':'',o.n&&o.fmt!=='mat'?'de '+o.n+' dezenas':'',o.fmt==='mat'?'matriz com '+o.k+' dezenas':o.fmt==='gar'?'fechamento'+(o.k?' de '+o.k+' dezenas':'')+(o.gar?' com garantia de '+o.gar+' pontos':''):'',o.fx&&o.fx.length?'fixando '+o.fx.map(p2).join(', '):'',o.rm&&o.rm.length?'tirando '+o.rm.map(p2).join(', '):''].filter(Boolean).join(', ');
     asPush('ai',(ent?'Entendi: '+ent+'.\n\n':'')+AS.plan.just+'\n\nTestes:\n'+testarJogos(AS.plan.games).join('\n')+'\n\nOs jogos estão no quadro do plano, nesta mesma tela: toque em salvar se gostar, ou me peça outro valor ou formato.');return}
   let est={};try{est=asTools().find(t=>t.name==='estado_atual').execute({})}catch(e){}
+  if(opt.fromAI){asPush('ai','Não consegui montar esse pedido. Tente dizer o valor e o formato, por exemplo: “10 jogos” ou “quero gastar R$ 30”.');return}
   if(!sample){asPush('ai','Para perguntas livres preciso de uma chave de IA (a do Google Gemini é gratuita: abra “Usar o assistente fora do Claude”). Sem chave, eu já faço tudo de jogos: diga o valor (“quero gastar R$ 30”) ou o formato (“10 jogos”, “matriz 17 dezenas”, “fixar 01 e 05”).');return}
   const bubble=asPush('ai',quer?'💬 A IA está escrevendo um comentário…':'⏳ Pensando…',' ');$('asSend').disabled=true;$('asStop').hidden=false;AS.ctrl=new AbortController();
   const prompt=`Você é o assistente de ${nm} num app da Lotofácil. Responda em português do Brasil, chamando-o pelo nome, em no máximo ${quer?'4 frases':'8 frases'}, texto simples sem markdown.
 Regras: não afirme que dezenas são mais prováveis nem que um dia é melhor. Não repita avisos sobre chance ou retorno, a menos que ele pergunte sobre isso. Seja prático e vá direto ao ponto. Use só os números abaixo, não invente outros.
 DADOS ATUAIS: ${JSON.stringify(est).slice(0,6000)}
 ${ctx}
-${quer?'Tarefa: comente o plano acima de forma amigável e curta (não repita a lista inteira), e pergunte se ele quer salvar os jogos ou ajustar algo.':'Pergunta de '+nm+': '+text}`;
+${quer?'Tarefa: comente o plano acima de forma amigável e curta (não repita a lista inteira), e pergunte se ele quer salvar os jogos ou ajustar algo.':'IMPORTANTE: se a mensagem abaixo for um PEDIDO para montar jogos (quantidade, valor, formato, matriz, fechamento, garantia, dezenas fixas ou excluídas), cobertura, calendário do mês, painel de gastos, vigia do sorteio ou popularidade dos jogos, responda APENAS com um JSON numa linha, sem nenhum texto, assim: {"acao":"plano|cobertura|calendario|painel|vigia|popularidade","valor":número ou null,"jogos":número ou null,"dezenas_por_jogo":número ou null,"formato":"15|16|matriz|garantia" ou null,"garantia":número ou null,"fixas":[números],"excluidas":[números],"valor_mensal":número ou null}. Se for uma pergunta, responda normalmente em texto.\nMensagem de '+nm+': '+orig}`;
   try{const res=await sample([{role:'user',content:prompt}],{cache:false,signal:AS.ctrl.signal,onText:({text:t})=>{if(t&&!/^⏳/.test(t))bubble.firstChild.textContent=t}});
-    bubble.firstChild.textContent=res.text||'(sem resposta)'}
+    const rt=res.text||'';const jm=!quer&&rt.match(/\{[^{}]*"acao"[^{}]*\}/);
+    if(jm&&!opt.fromAI){let jj=null;try{jj=JSON.parse(jm[0])}catch(x){}const cmd=jj&&cmdFromAI(jj);
+      if(cmd){bubble.firstChild.textContent='🧠 Entendi seu pedido como: “'+cmd+'”';$('asSend').disabled=false;$('asStop').hidden=true;return asFast(cmd,sample,{noEcho:true,fromAI:true})}}
+    bubble.firstChild.textContent=rt.replace(/^\s*\{[^{}]*"acao"[^{}]*\}\s*$/,'Não consegui transformar o pedido em jogos. Tente dizer o valor e o formato, por exemplo: “10 jogos” ou “quero gastar R$ 30”.')||'(sem resposta)'}
   catch(e){if(quer)bubble.remove();else bubble.firstChild.textContent=e&&e.name==='AbortError'?'Conversa interrompida.':'A IA gratuita não respondeu agora ('+String(e&&e.message||e).slice(0,160)+'). Para montar jogos, a IA não é necessária: peça o plano ou use “Montar plano automático”.'}
   finally{$('asSend').disabled=false;$('asStop').hidden=true;$('asLog').scrollTop=$('asLog').scrollHeight}}
 async function asSendMsg(text){text=(text||$('asIn').value).trim();if(!text)return;$('asIn').value='';$('asErr').textContent='';

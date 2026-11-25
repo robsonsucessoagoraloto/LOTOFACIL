@@ -1510,7 +1510,7 @@ function apiSample(){const fn=async(input,opts={})=>{const cfg=apiCfg();if(!cfg|
     const contents=[];for(const m of msgs){const role=m.role==='assistant'?'model':'user',text=typeof m.content==='string'?m.content:JSON.stringify(m.content);const last=contents[contents.length-1];if(last&&last.role===role)last.parts.push({text});else contents.push({role,parts:[{text}]})}
     const decl=toolsIn.map(t=>({name:t.name,description:t.description||'',parameters:gemSchema(t.inputSchema||{type:'object',properties:{}})}));
     const fila=[...new Set([cfg.model,'gemini-flash-latest','gemini-flash-lite-latest'].filter(Boolean))];let model=fila.shift();
-    let think=cfg.think!==false;const prog=t=>{if(!finalText&&opts.onText)opts.onText({text:t,delta:''})};
+    let think=cfg.think!==false,busy=0;const prog=t=>{if(!finalText&&opts.onText)opts.onText({text:t,delta:''})};
     for(let it=0;it<10;it++){const body={contents};if(decl.length)body.tools=[{functionDeclarations:decl}];if(think)body.generationConfig={thinkingConfig:{thinkingLevel:'low'}};
       prog(it?'⏳ Calculando… (etapa '+(it+1)+')':'⏳ Pensando…');
       const ac=new AbortController(),tm=setTimeout(()=>ac.abort('tempo'),90000),onAb=()=>ac.abort('parar');if(opts.signal){if(opts.signal.aborted)ac.abort('parar');opts.signal.addEventListener('abort',onAb,{once:true})}
@@ -1520,9 +1520,12 @@ function apiSample(){const fn=async(input,opts={})=>{const cfg=apiCfg();if(!cfg|
       clearTimeout(tm);
       if(!res.ok){const t=await res.text();
         if(think&&res.status===400&&/think/i.test(t)){think=false;try{localStorage.setItem(API_K,JSON.stringify(Object.assign({},apiCfg(),{think:false})))}catch(x){}it--;continue}
+        if((res.status===503||res.status===500||res.status===502||res.status===504)){busy=(busy||0)+1;
+          if(busy<=2){prog('⏳ O Google está ocupado, tentando de novo…');await new Promise(r=>setTimeout(r,busy*3000));it--;continue}
+          if(fila.length){busy=0;model=fila.shift();prog('⏳ O Google está ocupado, tentando outro modelo…');it--;continue}}
         if((res.status===404||res.status===429&&/limit:\s*0|free_tier/i.test(t)||res.status===400&&/model/i.test(t)&&!/function|schema|parameter/i.test(t))&&fila.length){model=fila.shift();it--;continue}
         let msg=t;try{msg=JSON.parse(t).error.message||t}catch(x){}fail(res.status,msg,'Gemini')}
-      if(model!==cfg.model){try{localStorage.setItem(API_K,JSON.stringify(Object.assign({},cfg,{model})))}catch(x){}cfg.model=model}
+      if(model!==cfg.model&&!busy){try{localStorage.setItem(API_K,JSON.stringify(Object.assign({},cfg,{model})))}catch(x){}cfg.model=model}
       const j=await res.json(),cont=j.candidates&&j.candidates[0]&&j.candidates[0].content;if(!cont||!cont.parts){if(!finalText)finalText='(A IA não respondeu. Tente de novo.)';break}
       contents.push({role:'model',parts:cont.parts});
       const txt=cont.parts.filter(p=>p.text&&!p.thought).map(p=>p.text).join('\n').trim();if(txt){finalText=txt;opts.onText&&opts.onText({text:txt,delta:txt})}

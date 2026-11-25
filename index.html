@@ -1277,6 +1277,26 @@ header.top .band,header.top.band{padding-bottom:20px}
   </div>
 </div></section>
 <section class="band" style="padding-top:0"><div class="wrap">
+  <div class="slip">
+    <h2 style="margin-top:0">Leitura de cenário e sugestão de dezenas</h2>
+    <p class="sub" style="margin-top:0" id="scLeit"></p>
+    <div class="formrow">
+      <label>Quantas dezenas<select id="scN"><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option></select></label>
+      <button id="scGo">Sugerir dezenas</button><button class="ghost" id="scAI">Pedir leitura da IA</button>
+    </div>
+    <details><summary><b>Os 22 critérios usados</b> <span class="small">(marque ou desmarque)</span></summary>
+      <p class="small" style="margin:8px 0 4px"><b>Dezenas (8):</b> dão pontos a cada dezena.</p><div class="crit" id="scCD"></div>
+      <p class="small" style="margin:12px 0 4px"><b>Padrões do jogo (14):</b> o jogo sugerido precisa ficar na faixa mais comum do histórico (os 80% centrais dos concursos).</p><div class="crit" id="scCP"></div>
+    </details>
+    <div class="err" id="scErr"></div>
+    <div id="scOut"></div>
+    <div id="scAIOut" style="white-space:pre-wrap;margin-top:10px"></div>
+  </div>
+  <h3 style="margin-top:24px">Painel das 25 dezenas</h3>
+  <p class="lead">Situação de cada dezena até o concurso <span id="scNc"></span>. Toque no título de uma coluna para ordenar.</p>
+  <div class="scroll"><table class="stack" id="scT"></table></div>
+</div></section>
+<section class="band" style="padding-top:0"><div class="wrap">
   <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
     <h3 style="margin:0" id="mtLT">Resultados com pontuação</h3>
     <div class="seg" role="group" aria-label="Ordem"><button id="mtOs" class="on">Ordem de sorteio</button><button id="mtOa">Ordem de acertos</button></div>
@@ -3264,8 +3284,70 @@ DADOS: ${JSON.stringify(dados)}`;
   try{const r=await sample(prompt,{cache:false,modelTier:'default'});$('boAI').textContent=r.text||'(sem resposta)'}
   catch(e){$('boAI').textContent='';$('boAErr').textContent='A IA não respondeu agora. Detalhe: '+String(e&&e.message||e).slice(0,200)+' O ranking e a carteira acima continuam valendo, pois são cálculos do app.'}
   finally{b.disabled=false;b.textContent='Pedir análise da IA'}});
+// ---------- Leitura de cenário (Montar jogo) ----------
+const SC_K='lf_cenario_v1',MAGM=toMask([5,6,7,12,13,14,19,20,21]),NA1=toMask(R(1,8)),NA2=toMask(R(9,17)),NA3=toMask(R(18,25));
+const SC_D=[['ciclo','Ciclo: pendentes'],['atr','Atraso atual'],['rec','Perto do recorde de atraso'],['f100','Frequência (100 concursos)'],['f25','Frequência (25 concursos)'],['f10','Frequência (10 concursos)'],['comp','Comportamento (troca de estado)'],['ult','Saiu no último concurso']];
+const SC_P=[['par','Pares',m=>cntM(m,PAR)],['pri','Primos',m=>cntM(m,PRI)],['fib','Fibonacci',m=>cntM(m,FIB)],['m3','Múltiplos de 3',m=>cntM(m,M3)],['mol','Moldura',m=>cntM(m,MOL)],['mag','Números mágicos',m=>cntM(m,MAGM)],
+  ['soma','Soma',m=>sumOf(m)],['rep','Repetidas do anterior',(m,p)=>cntM(m,p)],['seq','Maior sequência',m=>maxRun(m)],['sal','Maior salto',m=>maxGapEnds(m)],['lin','Menor nº por linha',m=>Math.min(...R(0,4).map(i=>lineCnt(m,i)))],
+  ['col','Menor nº por coluna',m=>Math.min(...R(0,4).map(i=>colCnt(m,i)))],['nai','Menor naipe (01-08, 09-17, 18-25)',m=>Math.min(cntM(m,NA1),cntM(m,NA2),cntM(m,NA3))],['pto','Pareto (distância)',m=>pDist(m)]];
+let SC={on:null,sort:'s',dir:-1,cache:null,last:null};
+try{SC.on=JSON.parse(localStorage.getItem(SC_K)||'null')}catch(e){}
+if(!SC.on)SC.on=Object.fromEntries(SC_D.concat(SC_P).map(x=>[x[0],true]));
+const scSave=()=>{try{localStorage.setItem(SC_K,JSON.stringify(SC.on))}catch(e){}};
+function scData(){const N=draws.length;if(SC.cache&&SC.cache.N===N)return SC.cache;if(!st)render();buildPre();const last=draws[N-1];
+  const D=R(1,25).map(d=>{let atr=0;for(let i=N-1;i>=0&&!has(draws[i],d);i--)atr++;
+    let rec=0,g=0,runs={1:[],0:[]},cur=null,len=0;for(let i=0;i<N;i++){const h=has(draws[i],d)?1:0;if(!h){g++;if(g>rec)rec=g}else g=0;if(h===cur)len++;else{if(cur!==null)runs[cur].push(len);cur=h;len=1}}
+    const avgRun=x=>runs[x].length?runs[x].reduce((a,b)=>a+b,0)/runs[x].length:1;
+    return {d,atr,rec,f100:fcount(N-100,N,d),f25:fcount(N-25,N,d),f10:fcount(N-10,N,d),pend:st.cur.pend.includes(d),ult:has(last,d),estado:cur,dur:len,medDur:avgRun(cur)}});
+  const P={};SC_P.forEach(([id,,f])=>{const v=[];for(let i=1;i<N;i++)v.push(f(draws[i],draws[i-1]));v.sort((a,b)=>a-b);P[id]={lo:v[Math.floor(v.length*0.1)],hi:v[Math.floor(v.length*0.9)]}});
+  return SC.cache={N,D,P,last}}
+function scScore(x){const o=SC.on,r=[];let s=0;
+  if(o.ciclo&&x.pend){s+=2;r.push('pendente no ciclo')}
+  if(o.atr&&x.atr>=2){const v=Math.min(2,x.atr/2);s+=v;r.push(x.atr+' concursos sem sair')}
+  if(o.rec&&x.rec&&x.atr>=Math.max(3,x.rec*0.6)){s+=1;r.push('perto do recorde de atraso ('+x.rec+')')}
+  if(o.f100){const z=(x.f100-60)/4.9;s+=Math.max(-1.5,Math.min(1.5,z*0.6));if(z>=1)r.push('muito sorteada nos últimos 100 ('+x.f100+')');if(z<=-1)r.push('pouco sorteada nos últimos 100 ('+x.f100+')')}
+  if(o.f25){const z=(x.f25-15)/2.45;s+=Math.max(-1,Math.min(1,z*0.4));if(z>=1)r.push('em alta nos últimos 25 ('+x.f25+')')}
+  if(o.f10){const z=(x.f10-6)/1.55;s+=Math.max(-1,Math.min(1,z*0.3));if(z>=1.2)r.push('quente nos últimos 10 ('+x.f10+')')}
+  if(o.comp&&x.dur>=Math.max(2,x.medDur*1.5)){s+=0.8;r.push((x.estado?'saindo há ':'ausente há ')+x.dur+' concursos (média '+fmt(x.medDur,1)+')')}
+  if(o.ult&&x.ult){s+=0.5;r.push('saiu no último')}
+  return {s,r}}
+function scPass(m,C){const fails=[];for(const [id,nm,f] of SC_P){if(!SC.on[id])continue;const v=f(m,C.last),R0=C.P[id];if(v<R0.lo||v>R0.hi)fails.push(nm)}return fails}
+function scSuggest(){const C=scData(),n=+$('scN').value||15,sc=C.D.map(x=>({...x,...scScore(x)}));
+  let best=null,bs=-1e9,bf=null;const w=sc.map(x=>Math.exp(x.s*0.7));
+  for(let t=0;t<6000;t++){const pool=R(0,24),wp=w.slice(),pick=[];for(let k=0;k<15;k++){let tot=0;for(const i of pool)tot+=wp[i];let r=Math.random()*tot,ii=0;for(;ii<pool.length;ii++){r-=wp[pool[ii]];if(r<=0)break}const q=pool.splice(Math.min(ii,pool.length-1),1)[0];pick.push(q+1)}
+    const m=toMask(pick),f=scPass(m,C),val=pick.reduce((a,d)=>a+sc[d-1].s,0)-f.length*100;if(val>bs){bs=val;best=pick;bf=f}}
+  let ds=best.slice();const extra=sc.filter(x=>!ds.includes(x.d)).sort((a,b)=>b.s-a.s);while(ds.length<n)ds.push(extra.shift().d);ds.sort((a,b)=>a-b);
+  SC.last={ds,fails:bf,sc};mt.sel=new Set(ds);renderMt();scShow()}
+function scShow(){const L=SC.last,C=scData();if(!L){$('scOut').innerHTML='';return}const m15=toMask(L.ds.slice(0,15));
+  const chk=SC_P.filter(x=>SC.on[x[0]]).map(([id,nm,f])=>{const v=f(L.ds.length===15?toMask(L.ds):m15,C.last),R0=C.P[id],ok=v>=R0.lo&&v<=R0.hi;return `<li>${ok?'✓':'✗'} ${esc(nm)}: ${v} <span class="small">(faixa comum ${R0.lo} a ${R0.hi})</span></li>`}).join('');
+  $('scOut').innerHTML=`<div class="plan" style="margin-top:12px"><p class="small" style="margin:0">Sugestão marcada no volante acima (${L.ds.length} dezenas). Toque em <b>Conferir</b> para testar no histórico, ou em <b>Sugerir dezenas</b> de novo para outra opção.</p>
+    <h3 style="margin:6px 0">${L.ds.map(p2).join(' ')}</h3>
+    <details open><summary class="small">Por que cada dezena</summary><ul class="small" style="margin:6px 0">${L.ds.map(d=>{const x=L.sc[d-1];return `<li><b>${p2(d)}</b>: ${x.r.length?esc(x.r.join('; ')):'completa o padrão do jogo'}</li>`}).join('')}</ul></details>
+    <details><summary class="small">Padrões do jogo${L.ds.length>15?' (conferidos nas 15 primeiras dezenas escolhidas)':''}</summary><ul class="small" style="margin:6px 0">${chk||'<li>Nenhum padrão marcado.</li>'}</ul></details>
+    <p class="small" style="margin:6px 0 0">${L.fails&&L.fails.length?'Não consegui encaixar todos os padrões juntos; ficou fora da faixa: '+esc(L.fails.join(', '))+'. ':''}Os critérios escolhem e organizam as dezenas; a chance do jogo é a mesma de qualquer outro.</p></div>`}
+function renderSc(){const C=scData(),N=C.N;
+  const box=(id,list)=>{$(id).innerHTML=list.map(x=>`<label><input type="checkbox" data-sc="${x[0]}"${SC.on[x[0]]?' checked':''}>${esc(x[1])}</label>`).join('')};box('scCD',SC_D);box('scCP',SC_P);
+  const pend=st.cur.pend,top=C.D.slice().sort((a,b)=>b.atr-a.atr).slice(0,4),hot=C.D.slice().sort((a,b)=>b.f25-a.f25).slice(0,4),cold=C.D.slice().sort((a,b)=>a.f25-b.f25).slice(0,3);
+  $('scLeit').textContent='Concurso '+N+': ciclo '+st.cur.cyc+(pend.length?' com '+pend.length+' pendente(s) ('+pend.map(p2).join(', ')+')':' fechado')+'. Mais atrasadas: '+top.map(x=>p2(x.d)+' ('+x.atr+')').join(', ')+'. Em alta nos últimos 25: '+hot.map(x=>p2(x.d)+' ('+x.f25+')').join(', ')+'. Em baixa: '+cold.map(x=>p2(x.d)+' ('+x.f25+')').join(', ')+'.';
+  $('scNc').textContent=N;
+  const rows=C.D.map(x=>({...x,...scScore(x)})),k=SC.sort,dir=SC.dir;rows.sort((a,b)=>((a[k]>b[k])-(a[k]<b[k]))*dir||a.d-b.d);
+  const th=(id,t)=>`<th class="num" data-k="${id}" style="cursor:pointer">${t}${SC.sort===id?(SC.dir<0?' ▼':' ▲'):''}</th>`;
+  $('scT').innerHTML='<thead><tr>'+th('d','Dezena')+th('s','Pontos')+th('atr','Atraso')+th('rec','Recorde')+th('f10','Últ. 10')+th('f25','Últ. 25')+th('f100','Últ. 100')+'<th>Ciclo</th><th>Situação</th></tr></thead><tbody>'+
+    rows.map(x=>`<tr><td class="num"><b>${p2(x.d)}</b></td><td class="num">${fmt(x.s,1)}</td><td class="num">${x.atr}</td><td class="num">${x.rec}</td><td class="num">${x.f10}</td><td class="num">${x.f25}</td><td class="num">${x.f100}</td><td>${x.pend?'pendente':''}</td><td class="small">${x.estado?'saindo há '+x.dur:'ausente há '+x.dur} (média ${fmt(x.medDur,1)})</td></tr>`).join('')+'</tbody>';
+  scShow()}
+$('scT').addEventListener('click',e=>{const t=e.target.closest('th[data-k]');if(!t)return;const k=t.dataset.k;if(SC.sort===k)SC.dir*=-1;else{SC.sort=k;SC.dir=k==='d'?1:-1}renderSc()});
+document.getElementById('m-montar').addEventListener('change',e=>{const c=e.target.closest('input[data-sc]');if(!c)return;SC.on[c.dataset.sc]=c.checked;scSave();renderSc()});
+$('scGo').addEventListener('click',()=>{$('scErr').textContent='';try{scSuggest()}catch(e){$('scErr').textContent='Não consegui montar a sugestão: '+e.message}});
+$('scAI').addEventListener('click',async()=>{$('scErr').textContent='';const sample=await getSample();if(!sample){$('scErr').textContent='Fora do Claude, a IA precisa de uma chave (Início → Assistente → “Usar o assistente fora do Claude”).';return}
+  const C=scData(),nm=(AS&&AS.cfg&&AS.cfg.nome)||'Robson',rows=C.D.map(x=>{const q=scScore(x);return {dezena:x.d,pontos:+q.s.toFixed(2),motivos:q.r,atraso:x.atr,recorde_atraso:x.rec,ult10:x.f10,ult25:x.f25,ult100:x.f100,pendente_ciclo:x.pend}});
+  const dados={concurso:C.N,ciclo:{numero:st.cur.cyc,pendentes:st.cur.pend},dezenas:rows,faixas_comuns:C.P,sugestao_atual:SC.last?SC.last.ds:null};
+  const prompt=`Você é o analista de ${nm} num app da Lotofácil. Em português do Brasil, texto simples sem markdown, no máximo 12 linhas, faça a leitura do cenário do próximo concurso usando SOMENTE os dados abaixo: ciclo, atrasadas, quentes e frias, e quais dezenas os critérios favorecem e quais deixam de fora, e por quê. ${SC.last?'Comente também a sugestão atual.':''} Não diga que alguma dezena é mais provável; diga que os critérios a favorecem. Sem avisos repetitivos.
+DADOS: ${JSON.stringify(dados)}`;
+  const b=$('scAI');b.disabled=true;b.textContent='Lendo o cenário…';$('scAIOut').textContent='⏳ A IA está lendo o cenário…';
+  try{const r=await sample(prompt,{cache:false,modelTier:'default'});$('scAIOut').textContent=r.text||''}catch(e){$('scAIOut').textContent='';$('scErr').textContent='A IA não respondeu agora ('+String(e&&e.message||e).slice(0,160)+'). A sugestão e o painel funcionam sem ela.'}
+  finally{b.disabled=false;b.textContent='Pedir leitura da IA'}});
 // ---------- navegação ----------
-const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:renderMt,assistente:renderAs,calc:renderCl,boloes:renderBo,ciclos:()=>{}};
+const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:()=>{renderMt();renderSc()},assistente:renderAs,calc:renderCl,boloes:renderBo,ciclos:()=>{}};
 let DIRTY=new Set(Object.keys(RENDERS));
 function renderAll(){render();cst=null;DIRTY=new Set(Object.keys(RENDERS));const m=curMod();if(RENDERS[m]){DIRTY.delete(m);RENDERS[m]()}}
 const GROUPS=[

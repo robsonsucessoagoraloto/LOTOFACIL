@@ -2043,7 +2043,7 @@ function renderFz(){
 }
 function renderFzCard(){const {idx,n}=zst,i=idx[n-1-zi],m=draws[i],c=i+1,info=FZ_INFO[c];
   $('fzTit').textContent='Concurso '+c;$('fzPr').textContent=info&&info[1]?'R$ '+info[1]:'';
-  $('fzDt').textContent=info?'Sorteio de '+info[0]+(info[1]?' · prêmio estimado':''):'Resultado adicionado por você';
+  $('fzDt').textContent=info?'Sorteio de '+info[0]+(info[1]?(info[2]==='r'?' · prêmio de cada ganhador de 15 pontos':' · prêmio estimado'):(info[2]==='r'?' · ninguém fez 15 pontos':'')):'Resultado adicionado por você';
   $('fzGrid').innerHTML=R(1,25).map(d=>`<div class="n${has(m,d)?' hit':''}">${p2(d)}</div>`).join('');
   const L=(S)=>fromMask(m&S).map(p2).join(' ');
   $('fzSt').innerHTML=[['Pares: '+cntM(m,PAR),L(PAR)],['Ímpares: '+(15-cntM(m,PAR)),L(~PAR)],['Soma dos números: '+sumOf(m),''],['Fibonacci: '+cntM(m,FIB),L(FIB)],['Primos: '+cntM(m,PRI),L(PRI)],['Múltiplos de 3: '+cntM(m,M3),L(M3)],['Moldura: '+cntM(m,MOL),L(MOL)],['Centro: '+(15-cntM(m,MOL)),L(~MOL)],['Repetidos do '+(c-1)+': '+cntM(m,draws[i-1]),L(draws[i-1])]]
@@ -2075,10 +2075,11 @@ let pos={mode:'s',dz:9,last:null,A:null,chiS:null};
 function sortedMatrix(){const A=Array.from({length:25},()=>Array(15).fill(0));draws.forEach(m=>fromMask(m).forEach((d,k)=>A[d-1][k]++));return A}
 function contingencyP(A){const rs=A.map(r=>r.reduce((a,b)=>a+b,0)),cs=A[0].map((_,j)=>A.reduce((a,r)=>a+r[j],0)),T=rs.reduce((a,b)=>a+b,0);let chi=0;
   A.forEach((r,i)=>r.forEach((o,j)=>{const e=rs[i]*cs[j]/T;if(e>0)chi+=(o-e)**2/e}));const df=(25-1)*(15-1);return {chi,df,p:gammaQ(df/2,chi/2)}}
+const ORD_N0=3835,ORD_SEEN=new Set();let ORD_N=ORD_N0;
 function renderPos(){
-  const S=pos.mode==='s',A=S?ORD.pos:sortedMatrix();pos.A=A;const T=S?3835:draws.length;
+  const S=pos.mode==='s',A=S?ORD.pos:sortedMatrix();pos.A=A;const T=S?ORD_N:draws.length;drawPoOrd();
   $('poS').classList.toggle('on',S);$('poC').classList.toggle('on',!S);$('poS').setAttribute('aria-pressed',S);$('poC').setAttribute('aria-pressed',!S);
-  $('poDesc').textContent=S?'Dados da tabela do site, concursos 1 a 3835. A ordem de sorteio não está nos resultados que você adiciona.':'Calculado a partir dos '+T+' concursos, com as dezenas em ordem crescente.';
+  $('poDesc').textContent=S?'Concursos 1 a 3835 da tabela do site'+(ORD_N>ORD_N0?' e mais '+(ORD_N-ORD_N0)+' concurso(s) trazidos pelo robô com a ordem de sorteio':'')+'. Resultados digitados à mão não têm a ordem de sorteio.':'Calculado a partir dos '+T+' concursos, com as dezenas em ordem crescente.';
   $('poH').textContent=S?'Em que posição cada dezena foi sorteada':'Em que posição cada dezena fica, em ordem crescente';
   const mx=Math.max(...A.flat());
   $('poHm').innerHTML='<thead><tr><th></th>'+R(1,15).map(k=>`<th>P${p2(k)}</th>`).join('')+'</tr></thead><tbody>'+
@@ -2087,7 +2088,7 @@ function renderPos(){
   if(S){pos.chiS=c;
     $('poT').textContent='Na ordem real de sorteio, nenhuma dezena tem posição preferida';
     $('poS2').textContent='Cada dezena aparece em cada uma das 15 posições quase o mesmo número de vezes, cerca de 1/15 do seu total.';
-    $('poK').innerHTML=[[fmt(c.p*100,0)+'%','Chance de o acaso gerar essas diferenças'],[Math.min(...A.flat())+' a '+mx,'Menor e maior valor da matriz'],[fmt(3835*15/25/15,0)+'×','Valor esperado por célula'],['Nenhum','Padrão de posição detectado']]
+    $('poK').innerHTML=[[fmt(c.p*100,0)+'%','Chance de o acaso gerar essas diferenças'],[Math.min(...A.flat())+' a '+mx,'Menor e maior valor da matriz'],[fmt(ORD_N*15/25/15,0)+'×','Valor esperado por célula'],['Nenhum','Padrão de posição detectado']]
       .map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('');
     $('poHonest').innerHTML='<b>Leitura honesta:</b> as bolas saem do globo sem ordem preferida. O site diz que o 09 “poucas vezes” aparece na posição 02, mas na ordem real de sorteio ele saiu em P02 '+A[8][1]+' vezes, acima da média de '+fmt(A[8].reduce((x,y)=>x+y,0)/15,0)+'. As variações da matriz são do tamanho que o acaso produz. Além disso, a aposta é um conjunto de 15 dezenas: a ordem em que elas saem não muda nada no resultado.';
   }else{
@@ -2107,7 +2108,7 @@ function renderPosD(){const r=pos.A[pos.dz-1],tot=r.reduce((a,b)=>a+b,0),mx=Math
   $('poD').innerHTML=r.map((v,k)=>`<div class="bar"><b>P${p2(k+1)}</b><div class="t"><div style="width:${mx?v/mx*100:0}%"></div></div><span class="v">${v}× · ${fmt(tot?v/tot*100:0,1)}%</span></div>`).join('')}
 $('poHm').addEventListener('click',e=>{const tr=e.target.closest('tr[data-d]');if(tr){pos.dz=+tr.dataset.d;renderPosD()}});
 $('poS').addEventListener('click',()=>{pos.mode='s';renderPos()});$('poC').addEventListener('click',()=>{pos.mode='c';renderPos()});
-$('poOrd').innerHTML='<thead><tr><th class="num">Conc.</th><th>Ordem em que as dezenas saíram</th></tr></thead><tbody>'+Object.keys(ORD.ordem).map(Number).sort((a,b)=>b-a).map(c=>`<tr><td class="num">${c}</td><td class="dz">${ORD.ordem[c].map(p2).join(' ')}</td></tr>`).join('')+'</tbody>';
+function drawPoOrd(){$('poOrd').innerHTML='<thead><tr><th class="num">Conc.</th><th>Ordem em que as dezenas saíram</th></tr></thead><tbody>'+Object.keys(ORD.ordem).map(Number).sort((a,b)=>b-a).map(c=>`<tr><td class="num">${c}</td><td class="dz">${ORD.ordem[c].map(p2).join(' ')}</td></tr>`).join('')+'</tbody>';}drawPoOrd();
 function posPayload(){const A=pos.A,S=pos.mode==='s';
   return {modulo:'posicoes',visao:S?'ordem de sorteio':'ordem crescente',matriz_dezena_por_posicao:A,
     teste_ordem_sorteio:pos.chiS?{p_valor:+pos.chiS.p.toPrecision(3),graus_liberdade:pos.chiS.df}:null,
@@ -3288,9 +3289,11 @@ function route(){const m=curMod();if(DIRTY.has(m)){DIRTY.delete(m);RENDERS[m]()}
 window.addEventListener('hashchange',route);
 renderAll();route();
 // Na versão hospedada (GitHub Pages), busca resultados.json e acrescenta os concursos que ainda não estão embutidos.
-(async()=>{try{const r=await fetch('resultados.json',{cache:'no-store'});if(!r.ok)return;const arr=await r.json();if(!Array.isArray(arr))return;let add=0;
-  arr.sort((a,b)=>a[0]-b[0]).forEach(row=>{const c=row[0],ds=row.slice(1).map(Number);if(c===MASKS.length+1&&ds.length===15&&ds.every(d=>d>=1&&d<=25)){MASKS.push(toMask(ds));add++}});
-  if(add){extra=extra.slice(Math.min(extra.length,add));saveExtra();cst=null;st=null;renderAll();route()}}catch(e){}})();
+(async()=>{try{const r=await fetch('resultados.json',{cache:'no-store'});if(!r.ok)return;const arr=await r.json();if(!Array.isArray(arr))return;let add=0,add2=0;
+  arr.sort((a,b)=>a[0]-b[0]).forEach(row=>{const c=row[0],ds=row.slice(1,16).map(Number),x=row[16]&&typeof row[16]==='object'?row[16]:null;if(c===MASKS.length+1&&ds.length===15&&ds.every(d=>d>=1&&d<=25)){MASKS.push(toMask(ds));add++}
+    if(x){if(c>ORD_N0&&!ORD_SEEN.has(c)&&Array.isArray(x.o)&&x.o.length===15&&x.o.every(d=>d>=1&&d<=25)){ORD_SEEN.add(c);x.o.forEach((d,jj)=>ORD.pos[d-1][jj]++);ORD_N++;ORD.ordem[c]=x.o.map(Number);add2++}
+      if(c%10===0&&x.d&&!FZ_INFO[c]){FZ_INFO[c]=[String(x.d),x.p?Number(x.p).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'','r'];add2++}}});
+  if(add||add2){if(add)extra=extra.slice(Math.min(extra.length,add));saveExtra();cst=null;st=null;renderAll();route()}}catch(e){}})();
 
 }
 </script><button id="pwaInstall" type="button" hidden style="position:fixed;right:16px;bottom:16px;z-index:50;border:0;border-radius:999px;padding:12px 18px;font:600 15px Archivo,system-ui,sans-serif;background:var(--gold,#ffc53d);color:#1d0b22;box-shadow:0 4px 16px #0005;cursor:pointer">Instalar app</button>

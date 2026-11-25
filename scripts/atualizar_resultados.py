@@ -27,7 +27,10 @@ def baixar(url):
 
 
 def extrair(dados):
-    """Devolve (numero, [15 dezenas]) para os dois formatos de resposta conhecidos."""
+    """Devolve (numero, [15 dezenas], extras) para os dois formatos de resposta conhecidos.
+
+    extras (opcional): {"o": ordem do sorteio, "d": data, "p": prêmio de 15 acertos}.
+    """
     numero = dados.get("numero") or dados.get("concurso")
     dezenas = dados.get("listaDezenas") or dados.get("dezenas") or dados.get("dezenasSorteadasOrdemSorteio")
     if numero is None or not dezenas:
@@ -35,7 +38,24 @@ def extrair(dados):
     dz = sorted(int(x) for x in dezenas)
     if len(dz) != 15 or len(set(dz)) != 15 or not all(1 <= d <= 25 for d in dz):
         raise ValueError(f"dezenas inválidas: {dz}")
-    return int(numero), dz
+    extras = {}
+    try:
+        ordem = dados.get("dezenasSorteadasOrdemSorteio") or dados.get("dezenasOrdemSorteio")
+        if ordem:
+            o = [int(x) for x in ordem]
+            if sorted(o) == dz:
+                extras["o"] = o
+        data = dados.get("dataApuracao") or dados.get("data")
+        if data:
+            extras["d"] = str(data)[:10]
+        for f in (dados.get("listaRateioPremio") or dados.get("premiacoes") or []):
+            if f.get("faixa") == 1 or "15" in str(f.get("descricaoFaixa") or f.get("descricao") or ""):
+                if f.get("valorPremio"):
+                    extras["p"] = float(f["valorPremio"])
+                break
+    except Exception:
+        extras = {}
+    return int(numero), dz, extras
 
 
 def buscar(n):
@@ -55,14 +75,14 @@ def buscar(n):
 def main():
     base = json.loads(ARQ.read_text(encoding="utf-8"))
     ultimo = max(r[0] for r in base)
-    (num_rec, _), fonte = buscar("")
+    (num_rec, _, _), fonte = buscar("")
     print(f"Base vai até {ultimo}. Último concurso disponível: {num_rec} (fonte: {fonte}).")
     novos = 0
     for n in range(ultimo + 1, min(num_rec, ultimo + MAX_POR_EXECUCAO) + 1):
-        (num, dz), fonte = buscar(n)
+        (num, dz, ext), fonte = buscar(n)
         if num != n:
             raise RuntimeError(f"pedi o concurso {n} e recebi o {num}")
-        base.append([n] + dz)
+        base.append([n] + dz + ([ext] if ext else []))
         novos += 1
         print(f"  + {n}: {' '.join(f'{d:02d}' for d in dz)} ({fonte})")
         time.sleep(1)

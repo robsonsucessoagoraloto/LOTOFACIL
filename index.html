@@ -273,6 +273,7 @@ header.top .band,header.top.band{padding-bottom:20px}
     <div>
       <h2 id="asHi" style="margin:0 0 6px;font-size:clamp(28px,4vw,40px);line-height:1.1"></h2>
       <p class="sub" id="asSit"></p>
+      <div id="asTermo"></div>
       <div id="asConf"></div>
       <div id="asAlert"></div>
       <div id="asTeim"></div>
@@ -1400,6 +1401,41 @@ header.top .band,header.top.band{padding-bottom:20px}
   <div id="tmList"><p class="lead">Nenhuma Teimosinha registrada.</p></div>
 </div></section>
 </main>
+<main id="m-tendencia" class="mod" hidden>
+<section class="band"><div class="wrap">
+  <h2 style="margin-top:0">Gráfico de tendência</h2>
+  <p class="lead" style="margin-top:0">Cada linha é um concurso (o mais recente em cima); cada coluna, uma dezena. No fim, o atraso atual de cada dezena. À direita, os padrões chineses: resto por 3 (012), amplitude e final da soma.</p>
+  <div class="formrow"><label>Concursos<select id="tdN"><option>20</option><option selected>30</option><option>50</option></select></label></div>
+  <div class="scroll"><table id="tdT" style="border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:13px"></table></div>
+  <div id="tdRes" style="margin-top:16px"></div>
+</div></section>
+</main>
+<main id="m-laboratorio" class="mod" hidden>
+<section class="band"><div class="wrap">
+  <h2 style="margin-top:0">Laboratório de métodos</h2>
+  <p class="lead" style="margin-top:0">Testa as regras que circulam por aí em todos os concursos desde o 101, usando só os dados que existiam antes de cada sorteio, e compara com o que o puro acaso acertaria.</p>
+  <div class="formrow"><label>Quantas dezenas por regra<select id="lbK"><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select></label><label>Janela de frequência<select id="lbM"><option>10</option><option>25</option><option selected>100</option></select></label><button id="lbGo">Testar todos os métodos</button></div>
+  <div class="scroll"><table class="stack" id="lbT"></table></div>
+  <p class="small" id="lbNote"></p>
+</div></section>
+</main>
+<main id="m-meubolao" class="mod" hidden>
+<section class="band"><div class="wrap">
+  <div class="hero">
+    <div class="slip">
+      <h2>Meu bolão</h2>
+      <p class="sub" style="margin-top:0">Bolão montado por você e registrado na lotérica: sem a taxa de até 35%. O app controla quem entrou, quem pagou e divide o prêmio sozinho.</p>
+      <div class="formrow"><label>Nome<input id="mbNome" style="width:12em" placeholder="ex.: Bolão da família"></label><label>Total de cotas<input id="mbCotas" type="number" min="2" max="200" value="10" style="width:6em"></label></div>
+      <div class="formrow"><label>Jogos<select id="mbSrc"><option value="melhor">Melhor opção do dia</option><option value="plano">Plano atual do assistente</option><option value="lote">Último lote salvo</option><option value="volante">Dezenas marcadas no Montar jogo</option><option value="texto">Digitar os jogos</option></select></label><label>Concursos (Teimosinha)<select id="mbK"><option>1</option><option>3</option><option>6</option><option>12</option></select></label></div>
+      <textarea id="mbTxt" rows="3" style="width:100%" hidden placeholder="Um jogo por linha, de 15 a 20 dezenas"></textarea>
+      <label style="display:grid;gap:4px;margin-top:8px">Participantes (um por linha: nome e quantas cotas, ex.: “Ana 2”)<textarea id="mbPart" rows="4" style="width:100%"></textarea></label>
+      <div class="formrow"><button id="mbCriar">Criar bolão</button></div><div class="err" id="mbErr"></div>
+    </div>
+    <div class="status"><div id="mbPrev"><p class="lead">Preencha ao lado para ver o custo de cada cota.</p></div></div>
+  </div>
+  <h3 style="margin-top:24px">Meus bolões</h3><div id="mbList"><p class="lead">Nenhum bolão criado.</p></div>
+</div></section>
+</main>
 <main id="m-calc" class="mod" hidden>
 <section class="band"><div class="wrap">
   <div class="hero">
@@ -1433,6 +1469,11 @@ header.top .band,header.top.band{padding-bottom:20px}
     <p class="lead" id="clDL"></p>
     <div class="scroll"><table id="clD"></table></div>
   </div>
+</div></section>
+<section class="band" style="padding-top:0"><div class="wrap">
+  <div class="slip"><h2 style="margin-top:0">Quanto tempo até os 15 pontos?</h2>
+    <div class="formrow"><label>Apostas por concurso<input id="smQ" type="number" min="1" max="500" value="10" style="width:6em"></label><label>Dezenas por aposta<select id="smN"><option>15</option><option>16</option><option>17</option><option>18</option><option>19</option><option>20</option></select></label><label>Concursos por semana<select id="smW"><option>6</option><option>3</option><option>1</option></select></label><button id="smGo">Simular</button></div>
+    <div class="kpis" id="smK" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"></div><p class="small" id="smS"></p></div>
 </div></section>
 </main>
 <section class="band" style="padding-top:0"><div class="wrap">
@@ -2126,7 +2167,7 @@ let pos={mode:'s',dz:9,last:null,A:null,chiS:null};
 function sortedMatrix(){const A=Array.from({length:25},()=>Array(15).fill(0));draws.forEach(m=>fromMask(m).forEach((d,k)=>A[d-1][k]++));return A}
 function contingencyP(A){const rs=A.map(r=>r.reduce((a,b)=>a+b,0)),cs=A[0].map((_,j)=>A.reduce((a,r)=>a+r[j],0)),T=rs.reduce((a,b)=>a+b,0);let chi=0;
   A.forEach((r,i)=>r.forEach((o,j)=>{const e=rs[i]*cs[j]/T;if(e>0)chi+=(o-e)**2/e}));const df=(25-1)*(15-1);return {chi,df,p:gammaQ(df/2,chi/2)}}
-const PREMIO15={};const ORD_N0=3835,ORD_SEEN=new Set();let ORD_N=ORD_N0;
+const PREMIO15={},EST={},ARREC={};const ORD_N0=3835,ORD_SEEN=new Set();let ORD_N=ORD_N0;
 function renderPos(){
   const S=pos.mode==='s',A=S?ORD.pos:sortedMatrix();pos.A=A;const T=S?ORD_N:draws.length;drawPoOrd();
   $('poS').classList.toggle('on',S);$('poC').classList.toggle('on',!S);$('poS').setAttribute('aria-pressed',S);$('poC').setAttribute('aria-pressed',!S);
@@ -2963,7 +3004,7 @@ function drawPlan(){const p=AS.plan;if(!p){$('asPlan').innerHTML='';return}
   $('asGer').onclick=()=>{GER.jogos=p.games;GER.n=p.n;GER.tipo=p.desc;location.hash='#gerador';setTimeout(renderGStats,50)};
   $('asNo').onclick=()=>{AS.plan=null;drawPlan()}}
 function asPush(role,text,tl){const d=document.createElement('div');d.className='msg '+(role==='me'?'me':'ai');d.textContent=text;if(tl){const t=document.createElement('div');t.className='tl';t.innerHTML=tl;d.appendChild(t)}$('asLog').appendChild(d);$('asLog').scrollTop=$('asLog').scrollHeight;return d}
-function renderAs(){const N=draws.length,nm=AS.cfg.nome||'Robson';if(!st)render();try{renderConf();renderAlerts();renderTeimHome()}catch(e){}
+function renderAs(){const N=draws.length,nm=AS.cfg.nome||'Robson';if(!st)render();try{renderTermo()}catch(e){}try{renderConf();renderAlerts();renderTeimHome()}catch(e){}
   $('asName').value=nm;$('asCrit').innerHTML=CRITS.map(([k,l])=>`<label><input type="checkbox" value="${k}"${AS.cfg.crit.includes(k)?' checked':''}>${esc(l)}</label>`).join('');
   const h=new Date().getHours();$('asHi').textContent=(h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+', '+nm+'.';
   $('asSit').textContent='O concurso '+N+' saiu com '+fromMask(draws[N-1]).map(p2).join(' ')+'. Ciclo '+st.cur.cyc+': '+(st.cur.pend.length?'faltam '+st.cur.pend.map(p2).join(', ')+'.':'acabou de fechar.')+' Próximo concurso: '+(N+1)+'.';
@@ -2998,6 +3039,7 @@ function mostrarMelhor(force){const N=draws.length,bud=+$('asBud').value||AS.cfg
     <h3 style="margin:4px 0 6px">${esc(c.nome)}: ${b.q} jogo${b.q>1?'s':''} por ${esc(brl2(b.custo))}</h3>
     <p style="margin:0 0 8px">Dá prêmio em <b>${fmt(b.pAny*100,1)}%</b> dos sorteios e 13 pontos ou mais em ${fmt(b.p13*100,2)}%${seg?`. O segundo melhor formato (${esc(seg.nome)}) dá prêmio em ${fmt(seg.pAny*100,1)}%`:''}.</p>
     <details><summary class="small">Ver todos os formatos testados</summary><div class="small" style="white-space:pre-wrap;margin-top:6px">${c.linhas.map((x,i)=>(i?'   ':'➜ ')+esc(x.nome)+': '+x.q+' jogo(s), '+esc(brl2(x.custo))+' · prêmio em '+fmt(x.pAny*100,1)+'% · 13+ em '+fmt(x.p13*100,2)+'%').join('\n')}</div></details>
+    <details><summary class="small">Testes feitos nas ferramentas</summary><ul class="small" style="margin:6px 0">${testarJogos(c.plan.games).map(t=>'<li>'+esc(t)+'</li>').join('')}</ul></details>
     <p class="small" style="margin:8px 0 0">Testado em 20 mil sorteios simulados. Os jogos estão no quadro do plano. <button class="ghost" id="mbRe" style="min-height:32px;padding:0 10px;font-size:13px">Recalcular</button></p></div>`;
   $('mbRe').onclick=()=>mostrarMelhor(true)}
 async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.cfg.nome||'Robson';
@@ -3022,11 +3064,12 @@ async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.
     const livre=!(o.Q||o.n||o.k||o.gar||o.fmt);
     if(livre&&bud){const C=melhorCenario(o,bud);if(C){const B=C[0];AS.plan=B.plan;AS.lastGen={games:B.plan.games,n:B.plan.n,desc:B.plan.desc};drawPlan();
       const lin=C.map((c,i)=>(i?'   ':'➜ ')+c.nome+': '+c.plan.games.length+' jogo(s), '+brl2(c.plan.custo)+' · ganha algo em '+fmt(c.pAny*100,1)+'% dos sorteios · 13+ pontos em '+fmt(c.p13*100,2)+'%').join('\n');
-      asPush('ai',nm+', com '+brl2(bud)+' testei '+C.length+' formatos em 20 mil sorteios simulados e escolhi o que mais vezes dá prêmio:\n\n'+lin+'\n\nEscolhido: '+B.nome+' ('+B.plan.desc+').\n'+(B.plan.why||[]).map(x=>'• '+x).join('\n')+'\n\nOs jogos estão no quadro do plano, nesta mesma tela. Se preferir outro formato da lista, é só pedir (ex.: “matriz 17 dezenas”).');return}}
+      asPush('ai',nm+', com '+brl2(bud)+' testei '+C.length+' formatos em 20 mil sorteios simulados e escolhi o que mais vezes dá prêmio:\n\n'+lin+'\n\nEscolhido: '+B.nome+' ('+B.plan.desc+').\n'+(B.plan.why||[]).map(x=>'• '+x).join('\n')+'\n\nTestes:\n'+testarJogos(B.plan.games).join('\n')+'\n\nOs jogos estão no quadro do plano, nesta mesma tela. Se preferir outro formato da lista, é só pedir (ex.: “matriz 17 dezenas”).');return}}
     planoAuto(o);if(!AS.plan){asPush('ai',$('apErr').textContent||'Não consegui montar o plano com esse orçamento.');return}
     const ent=[o.Q?o.Q+' jogos':'',o.n&&o.fmt!=='mat'?'de '+o.n+' dezenas':'',o.fmt==='mat'?'matriz com '+o.k+' dezenas':o.fmt==='gar'?'fechamento'+(o.k?' de '+o.k+' dezenas':'')+(o.gar?' com garantia de '+o.gar+' pontos':''):'',o.fx&&o.fx.length?'fixando '+o.fx.map(p2).join(', '):'',o.rm&&o.rm.length?'tirando '+o.rm.map(p2).join(', '):''].filter(Boolean).join(', ');
-    asPush('ai',(ent?'Entendi: '+ent+'.\n\n':'')+AS.plan.just+'\n\nOs jogos estão no quadro do plano, nesta mesma tela: toque em salvar se gostar, ou me peça outro valor ou formato.');return}
+    asPush('ai',(ent?'Entendi: '+ent+'.\n\n':'')+AS.plan.just+'\n\nTestes:\n'+testarJogos(AS.plan.games).join('\n')+'\n\nOs jogos estão no quadro do plano, nesta mesma tela: toque em salvar se gostar, ou me peça outro valor ou formato.');return}
   let est={};try{est=asTools().find(t=>t.name==='estado_atual').execute({})}catch(e){}
+  if(!sample){asPush('ai','Para perguntas livres preciso de uma chave de IA (a do Google Gemini é gratuita: abra “Usar o assistente fora do Claude”). Sem chave, eu já faço tudo de jogos: diga o valor (“quero gastar R$ 30”) ou o formato (“10 jogos”, “matriz 17 dezenas”, “fixar 01 e 05”).');return}
   const bubble=asPush('ai',quer?'💬 A IA está escrevendo um comentário…':'⏳ Pensando…',' ');$('asSend').disabled=true;$('asStop').hidden=false;AS.ctrl=new AbortController();
   const prompt=`Você é o assistente de ${nm} num app da Lotofácil. Responda em português do Brasil, chamando-o pelo nome, em no máximo ${quer?'4 frases':'8 frases'}, texto simples sem markdown.
 Regras: não afirme que dezenas são mais prováveis nem que um dia é melhor. Não repita avisos sobre chance ou retorno, a menos que ele pergunte sobre isso. Seja prático e vá direto ao ponto. Use só os números abaixo, não invente outros.
@@ -3038,7 +3081,7 @@ ${quer?'Tarefa: comente o plano acima de forma amigável e curta (não repita a 
   catch(e){if(quer)bubble.remove();else bubble.firstChild.textContent=e&&e.name==='AbortError'?'Conversa interrompida.':'A IA gratuita não respondeu agora ('+String(e&&e.message||e).slice(0,160)+'). Para montar jogos, a IA não é necessária: peça o plano ou use “Montar plano automático”.'}
   finally{$('asSend').disabled=false;$('asStop').hidden=true;$('asLog').scrollTop=$('asLog').scrollHeight}}
 async function asSendMsg(text){text=(text||$('asIn').value).trim();if(!text)return;$('asIn').value='';$('asErr').textContent='';
-  const sample=await getSample();if(!sample){$('asErr').textContent='Fora do Claude, o assistente precisa de uma chave de IA. Abra “Usar o assistente fora do Claude” logo abaixo: a chave do Google Gemini é gratuita.';return}
+  const sample=await getSample();if(!sample)return asFast(text,null);
   if(!(await sampleP)&&provOf(apiCfg())==='gemini')return asFast(text,sample);
   asPush('me',text);const N=draws.length,nm=AS.cfg.nome||'Robson',bud=+$('asBud').value||null;
   const crit=AS.cfg.crit.map(k=>CRITS.find(c=>c[0]===k)[1]).join(', ')||'nenhum (montagem equilibrada)';
@@ -3316,11 +3359,11 @@ DADOS: ${JSON.stringify(dados)}`;
   catch(e){$('boAI').textContent='';$('boAErr').textContent='A IA não respondeu agora. Detalhe: '+String(e&&e.message||e).slice(0,200)+' O ranking e a carteira acima continuam valendo, pois são cálculos do app.'}
   finally{b.disabled=false;b.textContent='Pedir análise da IA'}});
 // ---------- Leitura de cenário (Montar jogo) ----------
-const SC_K='lf_cenario_v1',MAGM=toMask([5,6,7,12,13,14,19,20,21]),NA1=toMask(R(1,8)),NA2=toMask(R(9,17)),NA3=toMask(R(18,25));
+const RES0=toMask([3,6,9,12,15,18,21,24]),RES1=toMask([1,4,7,10,13,16,19,22,25]);const SC_K='lf_cenario_v1',MAGM=toMask([5,6,7,12,13,14,19,20,21]),NA1=toMask(R(1,8)),NA2=toMask(R(9,17)),NA3=toMask(R(18,25));
 const SC_D=[['ciclo','Ciclo: pendentes'],['atr','Atraso atual'],['rec','Perto do recorde de atraso'],['f100','Frequência (100 concursos)'],['f25','Frequência (25 concursos)'],['f10','Frequência (10 concursos)'],['comp','Comportamento (troca de estado)'],['ult','Saiu no último concurso']];
 const SC_P=[['par','Pares',m=>cntM(m,PAR)],['pri','Primos',m=>cntM(m,PRI)],['fib','Fibonacci',m=>cntM(m,FIB)],['m3','Múltiplos de 3',m=>cntM(m,M3)],['mol','Moldura',m=>cntM(m,MOL)],['mag','Números mágicos',m=>cntM(m,MAGM)],
   ['soma','Soma',m=>sumOf(m)],['rep','Repetidas do anterior',(m,p)=>cntM(m,p)],['seq','Maior sequência',m=>maxRun(m)],['sal','Maior salto',m=>maxGapEnds(m)],['lin','Menor nº por linha',m=>Math.min(...R(0,4).map(i=>lineCnt(m,i)))],
-  ['col','Menor nº por coluna',m=>Math.min(...R(0,4).map(i=>colCnt(m,i)))],['nai','Menor naipe (01-08, 09-17, 18-25)',m=>Math.min(cntM(m,NA1),cntM(m,NA2),cntM(m,NA3))],['pto','Pareto (distância)',m=>pDist(m)]];
+  ['col','Menor nº por coluna',m=>Math.min(...R(0,4).map(i=>colCnt(m,i)))],['nai','Menor naipe (01-08, 09-17, 18-25)',m=>Math.min(cntM(m,NA1),cntM(m,NA2),cntM(m,NA3))],['pto','Pareto (distância)',m=>pDist(m)],['r0','Resto 0 por 3 (03, 06, 09…)',m=>cntM(m,RES0)],['r1','Resto 1 por 3 (01, 04, 07…)',m=>cntM(m,RES1)],['amp','Amplitude (maior − menor)',m=>{const a=fromMask(m);return a[a.length-1]-a[0]}],['fs','Final da soma',m=>sumOf(m)%10]];
 let SC={on:null,sort:'s',dir:-1,cache:null,last:null};
 try{SC.on=JSON.parse(localStorage.getItem(SC_K)||'null')}catch(e){}
 if(!SC.on)SC.on=Object.fromEntries(SC_D.concat(SC_P).map(x=>[x[0],true]));
@@ -3356,6 +3399,7 @@ function scShow(){const L=SC.last,C=scData();if(!L){$('scOut').innerHTML='';retu
     <h3 style="margin:6px 0">${L.ds.map(p2).join(' ')}</h3>
     <details open><summary class="small">Por que cada dezena</summary><ul class="small" style="margin:6px 0">${L.ds.map(d=>{const x=L.sc[d-1];return `<li><b>${p2(d)}</b>: ${x.r.length?esc(x.r.join('; ')):'completa o padrão do jogo'}</li>`}).join('')}</ul></details>
     <details><summary class="small">Padrões do jogo${L.ds.length>15?' (conferidos nas 15 primeiras dezenas escolhidas)':''}</summary><ul class="small" style="margin:6px 0">${chk||'<li>Nenhum padrão marcado.</li>'}</ul></details>
+    <details><summary class="small">Testes feitos nas ferramentas</summary><ul class="small" style="margin:6px 0">${testarJogos([toMask(L.ds)]).map(t=>'<li>'+esc(t)+'</li>').join('')}</ul></details>
     <p class="small" style="margin:6px 0 0">${L.fails&&L.fails.length?'Não consegui encaixar todos os padrões juntos; ficou fora da faixa: '+esc(L.fails.join(', '))+'. ':''}Os critérios escolhem e organizam as dezenas; a chance do jogo é a mesma de qualquer outro.</p></div>`}
 function renderSc(){const C=scData(),N=C.N;
   const box=(id,list)=>{$(id).innerHTML=list.map(x=>`<label><input type="checkbox" data-sc="${x[0]}"${SC.on[x[0]]?' checked':''}>${esc(x[1])}</label>`).join('')};box('scCD',SC_D);box('scCP',SC_P);
@@ -3426,7 +3470,7 @@ function tmShowAnalysis(g,K,A){const n=g.length;
    <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${[[pctF(A.comPremio),'dos períodos tiveram pelo menos um prêmio'],[fmt(A.medPrem,1),'concursos premiados por período, em média'],[pctF(A.lucro),'dos períodos pagaram o custo de volta ou mais'],[brl2(A.mediana),'retorno típico (metade dos períodos ganhou menos que isso)']].map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
    <p class="small" style="margin-top:12px">Melhor período: concursos ${A.best.ini} a ${A.best.ini+K-1}, ${brl2(A.best.tot)} em prêmios. Pior: concursos ${A.worst.ini} a ${A.worst.ini+K-1}, ${brl2(A.worst.tot)}. 80% dos períodos ficaram entre ${brl2(A.p10)} e ${brl2(A.p90)}, para um custo de ${brl2(A.custoTot)}. Prêmios de 14 e 15 usam os valores estimados do Gerador.</p></div>`}
 $('tmSrc').addEventListener('change',()=>{$('tmTxt').hidden=$('tmSrc').value!=='texto'});
-$('tmGo').addEventListener('click',()=>{$('tmErr').textContent='';try{const g=tmGames(),K=+$('tmK').value,A=tmAnalyze(g,K);TM.cur={g,K};tmShowAnalysis(g,K,A);$('tmReg').disabled=false;$('tmReg').textContent='Registrar: começa no concurso '+(draws.length+1)}catch(e){$('tmErr').textContent=e.message;$('tmReg').disabled=true}});
+$('tmGo').addEventListener('click',()=>{$('tmErr').textContent='';try{const g=tmGames(),K=+$('tmK').value,A=tmAnalyze(g,K);TM.cur={g,K};tmShowAnalysis(g,K,A);$('tmBack').insertAdjacentHTML('beforeend','<div class="slip" style="margin-top:12px"><h3 style="margin-top:0">Testes feitos nas ferramentas</h3><ul class="small">'+testarJogos(g.map(toMask)).map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul></div>');$('tmReg').disabled=false;$('tmReg').textContent='Registrar: começa no concurso '+(draws.length+1)}catch(e){$('tmErr').textContent=e.message;$('tmReg').disabled=true}});
 $('tmReg').addEventListener('click',()=>{if(!TM.cur)return;const L=tmLoad();L.unshift({id:Date.now(),ini:draws.length+1,K:TM.cur.K,jogos:TM.cur.g,criado:new Date().toISOString()});tmSaveAll(L.slice(0,30));$('tmReg').disabled=true;$('tmReg').textContent='Registrada';renderTmList();try{renderTeimHome()}catch(e){}});
 function tmStatus(T){const N=draws.length,fim=T.ini+T.K-1,feitos=Math.max(0,Math.min(N,fim)-T.ini+1),custo=T.jogos.reduce((a,ds)=>a+custoDs(ds),0);let rec=0,prem=0;const linhas=[];
   for(let c=T.ini;c<=Math.min(N,fim);c++){let v=0,best=0;T.jogos.forEach(ds=>{const r=premioJogo(ds,draws[c-1],c);v+=r.v;if(r.h>best)best=r.h});rec+=v;if(v>0)prem++;linhas.push({c,v,best})}
@@ -3448,17 +3492,108 @@ function renderTeimHome(){const L=tmLoad().map(T=>({T,S:tmStatus(T)})).filter(x=
   $('asTeim').innerHTML=L.slice(0,3).map(({T,S})=>`<div class="plan" style="margin-bottom:10px;border-color:${S.acabou?'var(--gold)':'var(--line)'}"><p class="small" style="margin:0">Teimosinha · concursos ${T.ini} a ${S.fim}</p>
     <p style="margin:4px 0 0">${S.acabou?'<b>Encerrou.</b> ':''}${S.feitos} de ${T.K} concursos · gasto ${esc(brl2(S.gasto))} · prêmios ${esc(brl2(S.rec))}${S.acabou?' · <a href="#teimosinha">renovar ou trocar</a>':''}</p></div>`).join('')}
 function renderTm(){$('tmTxt').hidden=$('tmSrc').value!=='texto';renderTmList()}
+// ---------- Termômetro do prêmio ----------
+const TE_K='lf_termo_v1';let TE={E:null,lam:null};try{Object.assign(TE,JSON.parse(localStorage.getItem(TE_K)||'{}'))}catch(e){}
+function termoCalc(Eover){const N=draws.length,P=prize(),p15=1/TOT;let E=Eover!=null?Eover:(TE.E||EST[N]||null),fonte=TE.E?'informado por você':EST[N]?'estimativa da Caixa':'valor médio do app';if(!E)E=P[15];
+  const arr=Object.keys(ARREC).map(Number).filter(c=>c>N-12).map(c=>ARREC[c]).sort((a,b)=>a-b),S=arr.length?arr[Math.floor(arr.length/2)]:null;
+  const ests=Object.keys(EST).map(Number).filter(c=>c>N-40&&c<N).map(c=>EST[c]).sort((a,b)=>a-b),Etyp=ests.length?ests[Math.floor(ests.length/2)]:2000000;
+  const lam=TE.lam||((S?S/P.a*p15:3)*Math.sqrt(Math.max(1,E/Etyp))),share=lam>0?(1-Math.exp(-lam))/lam:1;
+  const fixo=P[11]*hyper(15,11)+P[12]*hyper(15,12)+P[13]*hyper(15,13)+P[14]*hyper(15,14),ev=fixo+E*share*p15,ret=ev/P.a;
+  const base=(fixo+P[15]*((1-Math.exp(-3))/3)*p15)/P.a;return {E,fonte,lam,ret,base,ev,N}}
+function renderTermo(){const T=termoCalc(),dif=T.ret-T.base,lvl=dif>0.08?['🔥','quente','o prêmio está alto: cada real rende mais que o normal']:dif>0.02?['🌤️','morno','um pouco acima do normal']:dif<-0.02?['❄️','frio','abaixo do normal']:['🌡️','normal','dentro do normal'];
+  $('asTermo').innerHTML=`<div class="plan" style="margin-bottom:10px;border-color:${dif>0.08?'var(--gold)':'var(--line)'}"><p class="small" style="margin:0">Termômetro do prêmio · concurso ${T.N+1}</p>
+   <h3 style="margin:4px 0">${lvl[0]} ${esc(lvl[1][0].toUpperCase()+lvl[1].slice(1))}: cada R$ 1,00 apostado volta em média R$ ${fmt(T.ret,2)}</h3>
+   <p class="small" style="margin:0">Prêmio de 15 pontos considerado: ${esc(brl2(T.E))} (${esc(T.fonte)}), dividido em média com ${fmt(T.lam,1)} outro(s) ganhador(es) (estimativa: prêmio maior atrai mais apostas). Num concurso comum, volta cerca de R$ ${fmt(T.base,2)}. ${esc(lvl[2])}.
+   <details><summary>Ajustar</summary><div class="formrow"><label>Prêmio estimado (R$)<input id="teE" type="number" min="0" step="100000" style="width:10em" value="${TE.E||''}" placeholder="${Math.round(T.E)}"></label><label>Outros ganhadores esperados<input id="teL" type="number" min="0" step="0.5" style="width:6em" value="${TE.lam||''}" placeholder="${fmt(T.lam,1)}"></label><button class="ghost" id="teOk">Aplicar</button></div></details></p></div>`;
+  $('teOk').onclick=()=>{TE.E=+$('teE').value||null;TE.lam=+$('teL').value||null;try{localStorage.setItem(TE_K,JSON.stringify(TE))}catch(e){}renderTermo()}}
+
+// ---------- Laboratório de métodos ----------
+let LB={key:null,res:null};
+function labRun(K,M){const N=draws.length,key=N+'|'+K+'|'+M;if(LB.key===key)return LB.res;buildPre();
+  const lastSeen=new Int32Array(26).fill(-1),meth=[
+   ['Excluir as '+K+' menos sorteadas (últimos '+M+')','exc','fmin'],['Excluir as '+K+' mais sorteadas (últimos '+M+')','exc','fmax'],
+   ['Fixar as '+K+' mais sorteadas (últimos '+M+')','fix','fmax'],['Fixar as '+K+' mais atrasadas','fix','atr'],['Excluir as '+K+' mais atrasadas','exc','atr'],
+   ['Fixar as pendentes do ciclo (quando faltam até '+Math.max(K,3)+')','fixc',''],['Fixar as '+K+' que saíram no último concurso há mais tempo seguido','fix','streak']];
+  const R0=meth.map(()=>({n:0,ok:0,sorte:0})),streak=new Int32Array(26);let cyc=0;
+  for(let i=0;i<N;i++){const m=draws[i];
+    if(i>=100){const fr=R(1,25).map(d=>({d,f:fcount(i-M,i,d),a:i-1-lastSeen[d],s:streak[d]}));
+      meth.forEach(([nm,tipo,crit],j)=>{let set;
+        if(tipo==='fixc'){const pend=R(1,25).filter(d=>!(cyc&(1<<(d-1))));if(!pend.length||pend.length>Math.max(K,3))return;set=pend}
+        else{const o=fr.slice().sort(crit==='fmin'?(a,b)=>a.f-b.f||a.d-b.d:crit==='fmax'?(a,b)=>b.f-a.f||a.d-b.d:crit==='atr'?(a,b)=>b.a-a.a||a.d-b.d:(a,b)=>b.s-a.s||a.d-b.d);set=o.slice(0,K).map(x=>x.d)}
+        const hit=set.filter(d=>has(m,d)).length,k=set.length,ok=(tipo==='exc')?hit===0:hit===k;
+        const luck=(tipo==='exc')?comb(25-k,15)/TOT:comb(25-k,15-k)/TOT;R0[j].n++;R0[j].ok+=ok;R0[j].sorte+=luck})}
+    for(let d=1;d<=25;d++){if(has(m,d)){lastSeen[d]=i;streak[d]++}else streak[d]=0}
+    cyc|=m;if(cyc===0x1FFFFFF)cyc=0}
+  const res=meth.map((x,j)=>{const r=R0[j],p=r.ok/r.n,q=r.sorte/r.n,se=Math.sqrt(q*(1-q)/r.n),z=(p-q)/se;return {nome:x[0],n:r.n,p,q,z}});LB={key,res};return res}
+function renderLab(){const K=+$('lbK').value,M=+$('lbM').value,res=labRun(K,M);
+  $('lbT').innerHTML='<thead><tr><th>Método</th><th class="num">Vezes testado</th><th class="num">Acertou</th><th class="num">Acaso puro</th><th>Conclusão</th></tr></thead><tbody>'+res.map(r=>`<tr><td>${esc(r.nome)}</td><td class="num">${r.n.toLocaleString('pt-BR')}</td><td class="num"><b>${pctF(r.p)}</b></td><td class="num">${pctF(r.q)}</td><td>${Math.abs(r.z)<2?'igual ao acaso':r.z>0?'acima do acaso (diferença de '+fmt((r.p-r.q)*100,1)+' ponto)':'abaixo do acaso'}</td></tr>`).join('')+'</tbody>';
+  $('lbNote').textContent='“Igual ao acaso” quer dizer que a diferença cabe na variação normal (menos de 2 desvios). Cada concurso é testado só com o que se sabia antes dele.'}
+$('lbGo').addEventListener('click',renderLab);
+
+// ---------- Gráfico de tendência ----------
+function renderTend(){const N=draws.length,L=+$('tdN').value,C=scData();
+  const rows=R(Math.max(1,N-L+1),N).reverse();
+  const cell=(on,txt,bg)=>`<td style="width:22px;height:20px;text-align:center;border:1px solid var(--line);${on?'background:var(--pur);color:#fff;font-weight:700':''}${bg?';background:'+bg:''}">${txt}</td>`;
+  $('tdT').innerHTML='<thead><tr><th class="num" style="padding:2px 6px">Conc.</th>'+R(1,25).map(d=>`<th style="padding:2px">${p2(d)}</th>`).join('')+'<th style="padding:2px 6px">012</th><th style="padding:2px 6px">Ampl.</th><th style="padding:2px 6px">Soma</th></tr></thead><tbody>'+
+    rows.map(c=>{const m=draws[c-1],a=fromMask(m),sm=sumOf(m);return `<tr><td class="num" style="padding:2px 6px">${c}</td>`+R(1,25).map(d=>cell(has(m,d),has(m,d)?p2(d):'')).join('')+`<td class="num" style="padding:2px 6px">${cntM(m,RES0)}-${cntM(m,RES1)}-${15-cntM(m,RES0)-cntM(m,RES1)}</td><td class="num" style="padding:2px 6px">${a[14]-a[0]}</td><td class="num" style="padding:2px 6px">${sm} (${sm%10})</td></tr>`}).join('')+
+    '<tr><td class="small" style="padding:2px 6px">Atraso</td>'+C.D.map(x=>cell(false,x.atr,x.atr>=4?'var(--gold)':x.atr>=2?'var(--pur2)':'')).join('')+'<td colspan="3"></td></tr></tbody>';
+  const P=C.P;$('tdRes').innerHTML=`<div class="slip"><h3 style="margin-top:0">Faixas comuns (80% centrais dos ${N.toLocaleString('pt-BR')} concursos)</h3><ul class="small">${['r0','r1','amp','fs'].map(id=>{const x=SC_P.find(y=>y[0]===id);return `<li>${esc(x[1])}: de ${P[id].lo} a ${P[id].hi}</li>`}).join('')}</ul><p class="small">Esses 4 padrões também entram na sugestão de dezenas do Montar jogo.</p></div>`}
+$('tdN').addEventListener('change',renderTend);
+
+// ---------- Simulador: quanto tempo até os 15 ----------
+function renderSim(){const Q=Math.max(1,+$('smQ').value||1),n=+$('smN').value,W=+$('smW').value,P=prize(),q=Math.min(1,Q*comb(n,15)/TOT),porAno=W*52,custoC=Q*comb(n,15)*P.a;
+  const anos=1/(q*porAno),pIn=y=>1-Math.pow(1-q,porAno*y),u=Math.random(),k=Math.ceil(Math.log(u)/Math.log(1-q));
+  $('smK').innerHTML=[[fmt(anos,anos<10?1:0)+' anos','tempo médio até fazer 15 pontos'],[brl2(custoC*porAno*anos),'gasto médio até lá'],[pctF(pIn(1)),'chance em 1 ano'],[pctF(pIn(10)),'chance em 10 anos']].map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('');
+  $('smS').textContent='Gasto por concurso: '+brl2(custoC)+' ('+brl2(custoC*porAno)+' por ano). Numa simulação feita agora, os 15 pontos sairiam depois de '+k.toLocaleString('pt-BR')+' concursos (cerca de '+fmt(k/porAno,1)+' anos), com '+brl2(custoC*k)+' gastos. Toque em Simular de novo para outra simulação.'}
+$('smGo').addEventListener('click',renderSim);
+
+// ---------- Meu bolão ----------
+const MBO_K='lf_meubolao_v1';const mboLoad=()=>{try{return JSON.parse(localStorage.getItem(MBO_K)||'[]')}catch(e){return[]}},mboSave=L=>{try{localStorage.setItem(MBO_K,JSON.stringify(L))}catch(e){}};
+function mboGames(){const old=$('tmSrc').value,oldT=$('tmTxt').value;$('tmSrc').value=$('mbSrc').value;$('tmTxt').value=$('mbTxt').value;try{return tmGames()}finally{$('tmSrc').value=old;$('tmTxt').value=oldT}}
+function mboParts(){return $('mbPart').value.split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>{const m=l.match(/^(.*?)[\s:,-]+(\d+)\s*$/);return m?{nome:m[1].trim().slice(0,40),cotas:+m[2],pago:false}:{nome:l.slice(0,40),cotas:1,pago:false}})}
+function mboPrev(){try{const g=mboGames(),K=+$('mbK').value,cot=Math.max(2,+$('mbCotas').value||2),tot=g.reduce((a,ds)=>a+custoDs(ds),0)*K,parts=mboParts(),usadas=parts.reduce((a,p)=>a+p.cotas,0);
+  $('mbPrev').innerHTML=`<p class="sub" style="margin:0">${g.length} jogo(s) × ${K} concurso(s)</p><h2 style="color:var(--pur);margin:4px 0">${esc(brl2(tot/cot))} por cota</h2><p class="sub">Total ${esc(brl2(tot))} em ${cot} cotas, sem taxa. ${usadas?usadas+' cota(s) já distribuída(s)'+(usadas>cot?' (mais que o total!)':usadas<cot?', faltam '+(cot-usadas):''):''}</p>`}catch(e){$('mbPrev').innerHTML='<p class="lead">'+esc(e.message)+'</p>'}}
+['mbSrc','mbK','mbCotas','mbTxt','mbPart'].forEach(id=>$(id).addEventListener('input',()=>{$('mbTxt').hidden=$('mbSrc').value!=='texto';mboPrev()}));
+$('mbCriar').addEventListener('click',()=>{$('mbErr').textContent='';try{const g=mboGames(),K=+$('mbK').value,cot=Math.max(2,+$('mbCotas').value||2),parts=mboParts(),us=parts.reduce((a,p)=>a+p.cotas,0);
+  if(!parts.length)throw new Error('Informe os participantes, um por linha (ex.: “Ana 2”).');if(us!==cot)throw new Error('As cotas dos participantes somam '+us+', mas o bolão tem '+cot+'. Ajuste para fechar.');
+  const L=mboLoad();L.unshift({id:Date.now(),nome:$('mbNome').value.trim().slice(0,40)||'Meu bolão',ini:draws.length+1,K,cotas:cot,jogos:g,parts});mboSave(L.slice(0,20));renderMboList();$('mbErr').innerHTML='<span style="color:var(--ink)">Bolão criado. Registre os jogos na lotérica como bolão próprio.</span>'}catch(e){$('mbErr').textContent=e.message}});
+function mboStatus(B){const S=tmStatus({ini:B.ini,K:B.K,jogos:B.jogos});return S}
+function renderMboList(){const L=mboLoad();if(!L.length){$('mbList').innerHTML='<p class="lead">Nenhum bolão criado.</p>';return}
+  $('mbList').innerHTML=L.map((B,i)=>{const S=mboStatus(B),tot=B.jogos.reduce((a,ds)=>a+custoDs(ds),0)*B.K,porCota=tot/B.cotas,premCota=S.rec/B.cotas;
+    return `<div class="plan" style="margin-bottom:12px"><p class="small" style="margin:0">${esc(B.nome)} · concursos ${B.ini}${B.K>1?' a '+S.fim:''} · ${B.jogos.length} jogo(s) · ${B.cotas} cotas de ${esc(brl2(porCota))}</p>
+     <h3 style="margin:4px 0">${S.feitos?(S.rec?'🎉 Prêmio total '+esc(brl2(S.rec))+' · '+esc(brl2(premCota))+' por cota':'Sem prêmio até agora'):'Aguardando o concurso '+B.ini}</h3>
+     <div class="scroll"><table class="stack"><thead><tr><th>Participante</th><th class="num">Cotas</th><th class="num">Paga</th><th class="num">Recebe</th><th>Pagou?</th></tr></thead><tbody>${B.parts.map((p,k)=>`<tr><td>${esc(p.nome)}</td><td class="num">${p.cotas}</td><td class="num">${esc(brl2(p.cotas*porCota))}</td><td class="num">${esc(brl2(p.cotas*premCota))}</td><td><label style="flex-direction:row;display:inline-flex;gap:6px;align-items:center"><input type="checkbox" data-mpg="${i}:${k}"${p.pago?' checked':''} style="width:18px;height:18px;min-height:0">${p.pago?'sim':'não'}</label></td></tr>`).join('')}</tbody></table></div>
+     <div class="formrow"><button class="ghost" data-mcp="${i}">Copiar resumo para o WhatsApp</button><button class="ghost" data-mdel="${i}">Apagar</button></div></div>`}).join('')}
+$('mbList').addEventListener('change',e=>{const c=e.target.closest('input[data-mpg]');if(!c)return;const [i,k]=c.dataset.mpg.split(':').map(Number),L=mboLoad();L[i].parts[k].pago=c.checked;mboSave(L);renderMboList()});
+$('mbList').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;const L=mboLoad();
+  if(b.dataset.mdel!=null){L.splice(+b.dataset.mdel,1);mboSave(L);renderMboList()}
+  if(b.dataset.mcp!=null){const B=L[+b.dataset.mcp],S=mboStatus(B),tot=B.jogos.reduce((a,ds)=>a+custoDs(ds),0)*B.K,pc=tot/B.cotas,pr=S.rec/B.cotas;
+    const t='*'+B.nome+'* · Lotofácil concurso '+B.ini+(B.K>1?' a '+S.fim:'')+'\n'+B.cotas+' cotas de '+brl2(pc)+'\n\nJogos:\n'+B.jogos.map((ds,j)=>(j+1)+') '+ds.map(p2).join(' ')).join('\n')+'\n\nParticipantes:\n'+B.parts.map(p=>'• '+p.nome+': '+p.cotas+' cota(s), paga '+brl2(p.cotas*pc)+(p.pago?' ✅':' ⏳')+(S.rec?', recebe '+brl2(p.cotas*pr):'')).join('\n')+(S.feitos?'\n\nResultado: '+(S.rec?'prêmio total '+brl2(S.rec):'sem prêmio'):'');
+    try{await navigator.clipboard.writeText(t);b.textContent='Copiado!'}catch(x){b.textContent='Não deu para copiar'}setTimeout(()=>b.textContent='Copiar resumo para o WhatsApp',1800)}});
+function renderMbo(){$('mbTxt').hidden=$('mbSrc').value!=='texto';mboPrev();renderMboList()}
+
+// ---------- Testes obrigatórios de toda recomendação ----------
+function testarJogos(gamesM,ns){const g=gamesM.map(m=>fromMask(m)),P=prize(),K=gamesM.length,custo=g.reduce((a,ds)=>a+custoDs(ds),0),T=termoCalc();
+  const ms=gamesM,pt=tmPayTables(g),N=draws.length;let anyH=0,won=0;for(let c=0;c<N;c++){let v=0;for(let j=0;j<ms.length;j++)v+=pt[j][pc32(draws[c]&ms[j])];won+=v;if(v>0)anyH++}
+  const q=Math.min(1,g.reduce((a,ds)=>a+comb(ds.length,15),0)/TOT),anos=1/(q*312);
+  const C=scData(),pat=['r0','r1','amp','fs','par','soma'].map(id=>{const x=SC_P.find(y=>y[0]===id),R0=C.P[id],okc=g.filter(ds=>ds.length===15).filter(ds=>{const v=x[2](toMask(ds),C.last);return v>=R0.lo&&v<=R0.hi}).length,t=g.filter(ds=>ds.length===15).length;return t?x[1].split(' (')[0]+' '+okc+'/'+t:''}).filter(Boolean);
+  let lab='';try{const L=labRun(2,100);lab=L.filter(r=>/menos sorteadas|pendentes do ciclo|mais atrasadas/.test(r.nome)&&/Excluir as 2 menos|Fixar as pend|Fixar as 2 mais atrasadas/.test(r.nome)).map(r=>r.nome.replace(/ \(.*\)/,'')+': '+(Math.abs(r.z)<2?'igual ao acaso':r.z>0?'acima do acaso':'abaixo do acaso')).join('; ')}catch(e){}
+  return ['🌡️ Termômetro: cada R$ 1,00 volta em média R$ '+fmt(T.ret,2)+' neste concurso (normal: R$ '+fmt(T.base,2)+').',
+    '📜 Histórico: em '+N.toLocaleString('pt-BR')+' concursos, estes jogos teriam dado prêmio em '+fmt(anyH/N*100,1)+'% deles, devolvendo '+fmt(won/(custo*N)*100,0)+'% do gasto.',
+    '⏳ Simulador: jogando isto todo concurso, os 15 pontos sairiam em média em '+fmt(anos,anos<10?1:0)+' anos ('+brl2(custo*312*anos)+' gastos).',
+    pat.length?'🀄 Padrões chineses e de soma (jogos dentro da faixa comum): '+pat.join(', ')+'.':'',
+    lab?'🧪 Laboratório (regras usadas pelos critérios): '+lab+'.':''].filter(Boolean)}
 // ---------- navegação ----------
-const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:()=>{renderMt();renderSc()},assistente:renderAs,calc:renderCl,boloes:renderBo,teimosinha:renderTm,ciclos:()=>{}};
+const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:()=>{renderMt();renderSc()},assistente:renderAs,boloes:renderBo,teimosinha:renderTm,meubolao:renderMbo,laboratorio:renderLab,tendencia:renderTend,calc:()=>{renderCl();renderSim()},ciclos:()=>{}};
 let DIRTY=new Set(Object.keys(RENDERS));
 function renderAll(){render();cst=null;DIRTY=new Set(Object.keys(RENDERS));const m=curMod();if(RENDERS[m]){DIRTY.delete(m);RENDERS[m]()}}
 const GROUPS=[
  ['resumo','Início',[['assistente','Assistente'],['resumo','Coordenador e painel']]],
  ['resultados','Resultados',[['ausentes','Último resultado e conferidor'],['finalzero','Final zero']]],
- ['dezenas','Dezenas',[['frequencia','Frequência'],['comportamento','Comportamento'],['analise','Sequências e atrasos'],['ciclos','Ciclos']]],
+ ['dezenas','Dezenas',[['frequencia','Frequência'],['comportamento','Comportamento'],['analise','Sequências e atrasos'],['ciclos','Ciclos'],['tendencia','Gráfico de tendência']]],
  ['padroes-g','Padrões',[['padroes','Pares, primos e grupos'],['soma','Soma'],['linhas','Linhas e colunas'],['naipes','Naipes'],['sequencias','Sequências e saltos'],['posicoes','Posições'],['pareto','Pareto']]],
  ['comb','Combinações',[['combinar','Simulador de combinações'],['trincas','Duplas e trincas'],['duques','Afinidade (duques)']]],
- ['jogos','Jogos',[['montar','Montar jogo e testar'],['gerador','Gerador e fechamentos'],['calc','Calculadora de probabilidades'],['boloes','Avaliador de bolões'],['teimosinha','Teimosinha'],['filtros','Filtros']]]];
+ ['jogos','Jogos',[['montar','Montar jogo e testar'],['gerador','Gerador e fechamentos'],['calc','Calculadora de probabilidades'],['boloes','Avaliador de bolões'],['teimosinha','Teimosinha'],['meubolao','Meu bolão'],['laboratorio','Laboratório de métodos'],['filtros','Filtros']]]];
 const ALLMODS=GROUPS.flatMap(g=>g[2].map(x=>x[0]));
 function curMod(){const h=location.hash.slice(1);return ALLMODS.includes(h)&&document.getElementById('m-'+h)?h:(document.getElementById('m-assistente')?'assistente':'resumo')}
 $('gnav').innerHTML=GROUPS.map(g=>`<a href="#${g[2][0][0]}" data-g="${g[0]}">${esc(g[1])}</a>`).join('');
@@ -3476,7 +3611,7 @@ renderAll();route();
 (async()=>{try{const r=await fetch('resultados.json',{cache:'no-store'});if(!r.ok)return;const arr=await r.json();if(!Array.isArray(arr))return;let add=0,add2=0;
   arr.sort((a,b)=>a[0]-b[0]).forEach(row=>{const c=row[0],ds=row.slice(1,16).map(Number),x=row[16]&&typeof row[16]==='object'?row[16]:null;if(c===MASKS.length+1&&ds.length===15&&ds.every(d=>d>=1&&d<=25)){MASKS.push(toMask(ds));add++}
     if(x){if(c>ORD_N0&&!ORD_SEEN.has(c)&&Array.isArray(x.o)&&x.o.length===15&&x.o.every(d=>d>=1&&d<=25)){ORD_SEEN.add(c);x.o.forEach((d,jj)=>ORD.pos[d-1][jj]++);ORD_N++;ORD.ordem[c]=x.o.map(Number);add2++}
-      if(x.p!=null)PREMIO15[c]=+x.p;
+      if(x.p!=null)PREMIO15[c]=+x.p;if(x.e!=null)EST[c]=+x.e;if(x.a!=null)ARREC[c]=+x.a;
       if(c%10===0&&x.d&&!FZ_INFO[c]){FZ_INFO[c]=[String(x.d),x.p?Number(x.p).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'','r'];add2++}}});
   if(add||add2){if(add)extra=extra.slice(Math.min(extra.length,add));saveExtra();cst=null;st=null;renderAll();route()}}catch(e){}})();
 

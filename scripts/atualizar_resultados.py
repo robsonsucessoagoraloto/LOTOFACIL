@@ -45,6 +45,10 @@ def extrair(dados):
             o = [int(x) for x in ordem]
             if sorted(o) == dz:
                 extras["o"] = o
+        for chave, curto in (("valorEstimadoProximoConcurso", "e"), ("valorArrecadado", "a")):
+            v = dados.get(chave)
+            if isinstance(v, (int, float)) and v > 0:
+                extras[curto] = float(v)
         data = dados.get("dataApuracao") or dados.get("data")
         if data:
             extras["d"] = str(data)[:10]

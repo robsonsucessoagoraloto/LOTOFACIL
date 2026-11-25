@@ -273,6 +273,8 @@ header.top .band,header.top.band{padding-bottom:20px}
     <div>
       <h2 id="asHi" style="margin:0 0 6px;font-size:clamp(28px,4vw,40px);line-height:1.1"></h2>
       <p class="sub" id="asSit"></p>
+      <div id="asVig"></div>
+      <div id="asLim"></div>
       <div id="asTermo"></div>
       <div id="asConf"></div>
       <div id="asAlert"></div>
@@ -1434,6 +1436,43 @@ header.top .band,header.top.band{padding-bottom:20px}
     <div class="status"><div id="mbPrev"><p class="lead">Preencha ao lado para ver o custo de cada cota.</p></div></div>
   </div>
   <h3 style="margin-top:24px">Meus bolões</h3><div id="mbList"><p class="lead">Nenhum bolão criado.</p></div>
+</div></section>
+</main>
+<main id="m-cobertura" class="mod" hidden>
+<section class="band"><div class="wrap">
+  <div class="hero">
+    <div class="slip">
+      <h2>Otimizador de cobertura</h2>
+      <p class="sub" style="margin-top:0">Monta jogos de 15 dezenas que se sobrepõem o mínimo possível, para cobrir o maior número de resultados com o mesmo dinheiro. Testa milhares de arranjos e fica com o que mais vezes dá prêmio.</p>
+      <div class="formrow"><label>Quanto gastar (R$)<input id="coV" type="number" min="3.5" step="0.5" style="width:8em" placeholder="ex.: 35"></label><label>ou quantos jogos<input id="coQ" type="number" min="1" max="60" style="width:6em"></label></div>
+      <div class="formrow"><label>Dezenas fixas (opcional)<input id="coF" style="width:12em" placeholder="ex.: 01 05"></label><label>Dezenas fora (opcional)<input id="coX" style="width:12em" placeholder="ex.: 02 10"></label></div>
+      <div class="formrow"><button id="coGo">Otimizar</button><button class="ghost" id="coSave" disabled>Salvar estes jogos</button></div>
+      <div class="err" id="coErr"></div>
+    </div>
+    <div class="status"><p class="sub" style="margin:0" id="coHead">Informe o valor ou a quantidade de jogos</p><h2 id="coBig" style="font-size:clamp(28px,4vw,44px);color:var(--pur);margin:4px 0"></h2><p class="sub" id="coSub"></p><div class="kpis" id="coK"></div></div>
+  </div>
+  <div id="coOut" style="margin-top:16px"></div>
+</div></section>
+</main>
+<main id="m-vigia" class="mod" hidden>
+<section class="band"><div class="wrap">
+  <h2 style="margin-top:0">Vigia do sorteio</h2>
+  <p class="lead" style="margin-top:0">A cada concurso novo, o app testa se alguma dezena está saindo mais (ou menos) do que o acaso explicaria. Se um dia aparecer um desvio real, como uma bola com defeito, ele avisa no Início.</p>
+  <div id="vgOut"></div>
+  <div class="scroll" style="margin-top:12px"><table class="stack" id="vgT"></table></div>
+</div></section>
+</main>
+<main id="m-dinheiro" class="mod" hidden>
+<section class="band"><div class="wrap">
+  <h2 style="margin-top:0">Meu dinheiro</h2>
+  <div class="hero">
+    <div class="slip"><h3 style="margin-top:0">Painel de resultado real</h3><p class="small" style="margin-top:0">Conta os jogos que você salvou (como jogados), as Teimosinhas e os bolões. Os prêmios vêm da conferência automática.</p>
+      <div class="formrow"><label>Limite por mês (R$)<input id="dnLim" type="number" min="0" step="10" style="width:8em" placeholder="ex.: 200"></label><button class="ghost" id="dnLimOk">Salvar limite</button></div>
+      <div id="dnOut"></div></div>
+    <div class="slip"><h3 style="margin-top:0">Calendário do orçamento</h3><p class="small" style="margin-top:0">Distribui o valor do mês entre os próximos concursos: mais nos que pagam mais (final zero e prêmio acumulado), menos nos comuns.</p>
+      <div class="formrow"><label>Orçamento do mês (R$)<input id="caB" type="number" min="0" step="10" style="width:8em" placeholder="ex.: 300"></label><button id="caGo">Montar calendário</button></div>
+      <div id="caOut"></div></div>
+  </div>
 </div></section>
 </main>
 <main id="m-calc" class="mod" hidden>
@@ -2994,7 +3033,18 @@ return [
  {name:'propor_plano',description:'Mostra ao usuário, num cartão, os últimos jogos montados como proposta do dia, com título e justificativa. O usuário confirma antes de salvar. Chame depois de montar os jogos e só se o custo couber no orçamento.',
   inputSchema:{type:'object',properties:{titulo:{type:'string'},justificativa:{type:'string'}},required:['titulo','justificativa']},
   execute:i=>{if(!AS.lastGen)throw new Error('Monte os jogos antes de propor.');const bud=+$('asBud').value||0,c=custoJogos(AS.lastGen.games.length,AS.lastGen.n);
-    if(bud&&c>bud+1e-9)throw new Error('O plano custa '+brl2(c)+' e passa do orçamento de '+brl2(bud)+'. Reduza os jogos.');AS.plan={...AS.lastGen,titulo:String(i.titulo||'Plano do dia').slice(0,120),just:String(i.justificativa||'').slice(0,1200),custo:c};drawPlan();return {mostrado:true,custo:c}}}]}
+    if(bud&&c>bud+1e-9)throw new Error('O plano custa '+brl2(c)+' e passa do orçamento de '+brl2(bud)+'. Reduza os jogos.');AS.plan={...AS.lastGen,titulo:String(i.titulo||'Plano do dia').slice(0,120),just:String(i.justificativa||'').slice(0,1200),custo:c};drawPlan();return {mostrado:true,custo:c}}},
+ {name:'otimizar_cobertura',description:'Monta Q jogos de 15 dezenas com o otimizador de cobertura (mínima sobreposição, máximo de sorteios com prêmio). Aceita fixas e excluídas. Retorna os jogos, a chance de prêmio e a comparação com jogos ao acaso. Use para quem quer receber prêmios com frequência.',inputSchema:{type:'object',properties:{quantidade:{type:'integer'},fixas:{type:'array',items:{type:'integer'}},excluidas:{type:'array',items:{type:'integer'}}},required:['quantidade']},
+  execute:i=>{const r=otimizarCobertura(i.quantidade|0,{fx:i.fixas||[],ex:i.excluidas||[]});const jogos=keep(r.games,15,'Cobertura otimizada: '+r.games.length+' jogos');return {jogos,custo:r.games.length*P.a,chance_premio:+(r.pAny*100).toFixed(1),chance_premio_ao_acaso:+(r.rndAny*100).toFixed(1),chance_13_mais:+(r.p13*100).toFixed(2),testes:testarJogos(r.games)}}},
+ {name:'testar_jogos',description:'Roda os testes obrigatórios em jogos: termômetro do prêmio, histórico, simulador de tempo até 15 pontos, padrões, laboratório e popularidade. Use SEMPRE antes de recomendar jogos.',inputSchema:{type:'object',properties:{jogos:{type:'array',items:{type:'array',items:{type:'integer'}}}},required:['jogos']},
+  execute:i=>({testes:testarJogos((i.jogos||[]).map(toMask))})},
+ {name:'popularidade',description:'Avalia se os jogos usam padrões muito jogados (linhas, colunas, sequências, último resultado), que fazem dividir o prêmio com mais gente.',inputSchema:{type:'object',properties:{jogos:{type:'array',items:{type:'array',items:{type:'integer'}}}},required:['jogos']},
+  execute:i=>({resultado:(i.jogos||[]).map(ds=>{const r=popScore(toMask(ds));return {jogo:ds,nivel:r.nivel,pontos:r.s,motivos:r.why}})})},
+ {name:'termometro',description:'Retorno médio por real apostado no próximo concurso, com o prêmio estimado, comparado a um concurso comum.',inputSchema:{type:'object',properties:{}},execute:()=>{const T=termoCalc();return {retorno_por_real:+T.ret.toFixed(3),retorno_comum:+T.base.toFixed(3),premio_15_considerado:T.E,fonte:T.fonte}}},
+ {name:'calendario_orcamento',description:'Distribui um orçamento mensal entre os próximos 26 concursos, apostando mais nos que pagam mais.',inputSchema:{type:'object',properties:{valor_mensal:{type:'number'}},required:['valor_mensal']},
+  execute:i=>{const C=calendario(+i.valor_mensal||0);return {calendario:C.lista.filter(x=>x.jogos>0).map(x=>({concurso:x.c,tipo:x.tipo,jogos:x.jogos,valor:x.v})),retorno_esperado:+C.evCal.toFixed(2),retorno_gastando_igual:+C.flat.toFixed(2)}}},
+ {name:'painel_resultados',description:'Gasto, prêmios e saldo do usuário por mês, e o limite mensal.',inputSchema:{type:'object',properties:{}},execute:()=>{const D=painelCalc();return {total:D.tot,mes_atual:D.mesAtual,gasto_no_mes:D.gMes,limite_mensal:D.lim,por_mes:D.meses}}},
+ {name:'vigia_sorteio',description:'Teste estatístico para ver se alguma dezena sai mais ou menos do que o acaso explica.',inputSchema:{type:'object',properties:{}},execute:()=>vigiaCalc().map(w=>({janela:w.nm,concursos:w.n,chance_do_acaso:+w.p.toPrecision(3),alerta:w.alerta}))}]}
 function drawPlan(){const p=AS.plan;if(!p){$('asPlan').innerHTML='';return}
   $('asPlan').innerHTML=`<div class="plan" style="margin-top:16px"><h3 style="margin:0 0 4px">${esc(p.titulo)}</h3><p class="small" style="margin:0 0 8px">${esc(p.desc)} · custo ${brl2(p.custo)}</p><p style="margin:0 0 10px;white-space:pre-wrap">${esc(p.just)}</p>
    <div class="dz small">${p.games.slice(0,30).map((m,i)=>`${i+1}. ${fromMask(m).map(p2).join(' ')}`).join('<br>')}${p.games.length>30?'<br>…':''}</div>
@@ -3004,7 +3054,7 @@ function drawPlan(){const p=AS.plan;if(!p){$('asPlan').innerHTML='';return}
   $('asGer').onclick=()=>{GER.jogos=p.games;GER.n=p.n;GER.tipo=p.desc;location.hash='#gerador';setTimeout(renderGStats,50)};
   $('asNo').onclick=()=>{AS.plan=null;drawPlan()}}
 function asPush(role,text,tl){const d=document.createElement('div');d.className='msg '+(role==='me'?'me':'ai');d.textContent=text;if(tl){const t=document.createElement('div');t.className='tl';t.innerHTML=tl;d.appendChild(t)}$('asLog').appendChild(d);$('asLog').scrollTop=$('asLog').scrollHeight;return d}
-function renderAs(){const N=draws.length,nm=AS.cfg.nome||'Robson';if(!st)render();try{renderTermo()}catch(e){}try{renderConf();renderAlerts();renderTeimHome()}catch(e){}
+function renderAs(){const N=draws.length,nm=AS.cfg.nome||'Robson';if(!st)render();try{renderTermo()}catch(e){}try{renderVigHome();renderLimHome()}catch(e){}try{renderConf();renderAlerts();renderTeimHome()}catch(e){}
   $('asName').value=nm;$('asCrit').innerHTML=CRITS.map(([k,l])=>`<label><input type="checkbox" value="${k}"${AS.cfg.crit.includes(k)?' checked':''}>${esc(l)}</label>`).join('');
   const h=new Date().getHours();$('asHi').textContent=(h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+', '+nm+'.';
   $('asSit').textContent='O concurso '+N+' saiu com '+fromMask(draws[N-1]).map(p2).join(' ')+'. Ciclo '+st.cur.cyc+': '+(st.cur.pend.length?'faltam '+st.cur.pend.map(p2).join(', ')+'.':'acabou de fechar.')+' Próximo concurso: '+(N+1)+'.';
@@ -3023,6 +3073,9 @@ function melhorCenario(o,bud){const P=prize(),cands=[];
   for(const [nome,t] of tries){if(t.fmt==='16'&&bud<comb(16,15)*P.a)continue;if(t.fmt==='gar'&&bud<21)continue;
     planoAuto(Object.assign({},o,t,{silent:true}));const p=AS.plan;if(!p||!p.games||!p.games.length||p.custo>bud+1e-9)continue;
     const e=avaliaPlano(p.games,p.n);cands.push({nome,plan:p,...e})}
+  try{const Q=Math.floor(bud/P.a+1e-9);if(Q>=2){const r=otimizarCobertura(Math.min(60,Q),{});const games=r.games,why=['Cobertura otimizada: '+games.length+' jogos de 15 montados para se sobrepor o mínimo possível (testados em milhares de arranjos).','Popularidade dos jogos: baixa ou média (menos chance de dividir o prêmio).'];
+    const plan={games,n:15,desc:'Cobertura otimizada: '+games.length+' jogos de 15',titulo:'Cobertura otimizada',just:(AS.cfg.nome||'Robson')+', montei '+games.length+' jogo(s) por '+brl2(games.length*P.a)+' com o otimizador de cobertura.\n\n'+why.map(x=>'• '+x).join('\n'),custo:games.length*P.a,why};
+    const e=avaliaPlano(games,15);cands.push({nome:'Cobertura otimizada',plan,...e})}}catch(x){}
   if(!cands.length)return null;cands.sort((a,b)=>b.pAny-a.pAny||b.ev-a.ev);return cands}
 // Melhor opção do dia: calculada uma vez por concurso e valor, guardada e mostrada sempre que o app abre.
 const MB_K='lf_melhor_v1';
@@ -3055,6 +3108,14 @@ async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.
   else if(o.n){o.fmt=o.n===16?'16':'15';$('apFmt').value=o.fmt}else if(o.Q){o.fmt='15';o.n=15;$('apFmt').value='15'}
   if(o.fmt==='gar')$('apFmt').value='gar';if(o.fmt==='mat')$('apFmt').value='15';
   const temOrdem=!!(o.Q||o.n||o.k||o.gar||o.fmt||(o.fx&&o.fx.length)||(o.rm&&o.rm.length));
+  if(/vigia|viciad|desvio|bola com defeito/i.test(text)){const W=vigiaCalc(),al=W.slice(1).filter(w=>w.alerta);asPush('ai',(al.length?'⚠️ Desvio estatístico recente em: '+al.map(w=>w.nm).join(', ')+'.':'✅ Nenhum desvio recente: nos últimos 500 e 100 concursos o sorteio se comporta como acaso puro.'+(W[0].alerta?' No histórico completo há uma diferença pequena ('+fmt(W[0].tam*100,1)+'% no máximo) que já não aparece hoje.':''))+'\n'+W.map(w=>'• '+w.nm+': chance de o acaso produzir essas diferenças = '+pctF(w.p)).join('\n')+'\n\nDetalhes em Dezenas → Vigia do sorteio.');return}
+  if(/painel|gastei|ganhei|saldo|quanto (eu )?gast|meu dinheiro/i.test(text)){const D=painelCalc(),T=D.tot;asPush('ai',T.g?'Até agora: gasto '+brl2(T.g)+', prêmios '+brl2(T.w)+', saldo '+(T.w-T.g>=0?'+':'−')+brl2(Math.abs(T.w-T.g))+'. Neste mês: '+brl2(D.gMes)+(D.lim?' de um limite de '+brl2(D.lim):'')+'.\nDetalhes em Início → Meu dinheiro.':'Ainda não há jogos salvos. Salve os jogos que fizer para eu contar gasto e prêmios.');return}
+  if(/calend[aá]rio|or[çc]amento do m[eê]s|por m[eê]s|mensal/i.test(text)){const v=(text.match(/(\d+(?:[.,]\d{1,2})?)/)||[])[1];if(!v){asPush('ai','Quanto você quer gastar no mês? Ex.: “calendário com R$ 300 no mês”.');return}const C=calendario(parseFloat(v.replace(',','.')));
+    asPush('ai','Calendário para '+brl2(C.B)+' no mês (próximos 26 concursos):\n'+C.lista.filter(x=>x.jogos>0).map(x=>'• '+x.c+' ('+x.tipo+'): '+x.jogos+' jogo(s), '+brl2(x.v)).join('\n')+'\n\nRetorno médio esperado: '+brl2(C.evCal)+', contra '+brl2(C.flat)+' gastando igual todo concurso. Detalhes em Início → Meu dinheiro.');return}
+  if(/popular|dividir o pr[eê]mio|divis[aã]o/i.test(text)){if(!AS.plan||!AS.plan.games){asPush('ai','Monte um plano primeiro (ex.: “quero gastar R$ 30”) e eu avalio a popularidade dos jogos.');return}const ps=AS.plan.games.map(popScore);asPush('ai','Popularidade dos '+ps.length+' jogos do plano:\n'+ps.map((x,i)=>'• Jogo '+(i+1)+': '+x.nivel+(x.why.length?' ('+x.why.join(', ')+')':'')).join('\n'));return}
+  if(/cobertura|otimiz|espalh/i.test(text)){const P=prize(),mv=text.match(/R\$\s*(\d+(?:[.,]\d{1,2})?)/i);if(mv)$('asBud').value=parseFloat(mv[1].replace(',','.'));const Q=o.Q||Math.floor((+$('asBud').value||0)/P.a+1e-9);if(!Q){AS.pediuValor=true;asPush('ai','Quanto quer gastar (ou quantos jogos)? Ex.: “cobertura com R$ 35” ou “cobertura com 10 jogos”.');return}
+    const r=otimizarCobertura(Q,{fx:o.fx,ex:o.rm});AS.plan={games:r.games,n:15,desc:'Cobertura otimizada: '+r.games.length+' jogos',titulo:'Cobertura otimizada do concurso '+(N+1),just:'',custo:r.games.length*P.a};AS.lastGen={games:r.games,n:15,desc:AS.plan.desc};drawPlan();
+    asPush('ai','Montei '+r.games.length+' jogos de 15 com o otimizador de cobertura ('+brl2(r.games.length*P.a)+'). Em 20 mil sorteios simulados, dão prêmio em '+pctF(r.pAny)+' deles (jogos ao acaso: '+pctF(r.rndAny)+') e chegam a 13+ em '+pctF(r.p13)+' (ao acaso: '+pctF(r.rnd13)+').\n\nTestes:\n'+testarJogos(r.games).join('\n')+'\n\nOs jogos estão no quadro do plano.');return}
   const soNum=/^\s*(?:r\$\s*)?\d+(?:[.,]\d{1,2})?\s*(?:reais)?\s*$/i.test(text);const mB=soNum||AS.pediuValor&&!temOrdem&&/\d/.test(text)?text.match(/(\d+(?:[.,]\d{1,2})?)/):text.match(/(?:R\$\s*|gastar\s*|or[çc]amento\s*(?:de\s*)?)(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*reais/i);AS.pediuValor=false;if(mB){$('asBud').value=parseFloat((mB[1]||mB[2]).replace(',','.'));try{AS.cfg.bud=+$('asBud').value;asSave()}catch(e){}}
   if(/garantia|fechamento|matriz/i.test(text))$('apFmt').value='gar';else if(/16\s*dezenas|apostas?\s+de\s+16/i.test(text))$('apFmt').value='16';else if(/jogos?\s+de\s+15|15\s*dezenas/i.test(text))$('apFmt').value='15';
   const bud=+$('asBud').value||0,quer=!!mB||temOrdem||/plano|mont|jogo|matriz|fechamento|gastar|R\$|reais|or[çc]amento|aposta/i.test(text);
@@ -3089,7 +3150,7 @@ async function asSendMsg(text){text=(text||$('asIn').value).trim();if(!text)retu
 Como trabalhar:
 1. Fale em português do Brasil, chamando-o pelo nome, de forma direta e calorosa. Texto simples, sem tabelas markdown.
 2. Se o orçamento não foi informado, pergunte antes de montar jogos. Nunca passe do orçamento. Se ${nm} pedir algo que passa do orçamento, mostre o custo e pergunte se ele quer mesmo aumentar.
-3. Use as ferramentas para tudo: estado_atual primeiro, opcoes_orcamento para ver o que cabe, montar_fechamento / montar_fechamento_garantia / gerar_jogos_filtros para montar, conferir_historico se útil, e propor_plano para mostrar a proposta. Nunca invente números.
+3. Antes de recomendar qualquer jogo, rode testar_jogos e mostre os resultados. Para quem quer ganhar com frequência, prefira otimizar_cobertura. Use as ferramentas para tudo: estado_atual primeiro, opcoes_orcamento para ver o que cabe, montar_fechamento / montar_fechamento_garantia / gerar_jogos_filtros para montar, conferir_historico se útil, e propor_plano para mostrar a proposta. Nunca invente números.
 4. Aplique os critérios escolhidos de forma transparente: ciclo = fixar dezenas pendentes do ciclo; frequência e atrasos = preferir algumas dezenas mais sorteadas recentes ou mais atrasadas; filtros = usar gerar_jogos_filtros ou respeitar os filtros; repetidas = manter cerca de 8 a 10 dezenas do último concurso. Explique cada escolha pelo critério.
 5. Honestidade obrigatória: diga com clareza que os critérios organizam o jogo, mas não aumentam a chance de prêmio (testado em 3.836 concursos). Nunca diga que dezenas são "mais prováveis" nem que hoje é um dia melhor para jogar. Sempre informe o custo, a pontuação garantida e a chance da condição da garantia. O retorno médio de qualquer aposta é cerca de 41% do valor apostado.
 6. Pode fazer perguntas a ${nm} (orçamento, preferência entre opções) e oferecer alternativas, como uma matriz de 16 jogos com 16 dezenas se ele quiser, mostrando o custo.
@@ -3582,18 +3643,97 @@ function testarJogos(gamesM,ns){const g=gamesM.map(m=>fromMask(m)),P=prize(),K=g
     '📜 Histórico: em '+N.toLocaleString('pt-BR')+' concursos, estes jogos teriam dado prêmio em '+fmt(anyH/N*100,1)+'% deles, devolvendo '+fmt(won/(custo*N)*100,0)+'% do gasto.',
     '⏳ Simulador: jogando isto todo concurso, os 15 pontos sairiam em média em '+fmt(anos,anos<10?1:0)+' anos ('+brl2(custo*312*anos)+' gastos).',
     pat.length?'🀄 Padrões chineses e de soma (jogos dentro da faixa comum): '+pat.join(', ')+'.':'',
-    lab?'🧪 Laboratório (regras usadas pelos critérios): '+lab+'.':''].filter(Boolean)}
+    lab?'🧪 Laboratório (regras usadas pelos critérios): '+lab+'.':'',
+    (()=>{const ps=g.filter(ds=>ds.length===15).map(ds=>popScore(toMask(ds))),alt=ps.filter(x=>x.nivel==='alta').length;return ps.length?'👥 Popularidade (divisão de prêmio): '+(alt?alt+' de '+ps.length+' jogo(s) com padrão muito jogado ('+ps.filter(x=>x.nivel==='alta')[0].why.join(', ')+')':'nenhum jogo com padrão muito jogado')+'.':''})()].filter(Boolean)}
+// ---------- Popularidade (antidivisão de prêmio) ----------
+const DIAG1=toMask([1,7,13,19,25]),DIAG2=toMask([5,9,13,17,21]);
+function popScore(m){let s=0;const why=[],N=draws.length,last=draws[N-1];
+  for(let i=0;i<5;i++){if(lineCnt(m,i)===5){s+=15;why.push('linha '+(i+1)+' inteira')}if(colCnt(m,i)===5){s+=15;why.push('coluna '+(i+1)+' inteira')}}
+  if((m&DIAG1)===DIAG1||(m&DIAG2)===DIAG2){s+=15;why.push('diagonal inteira')}
+  const run=maxRun(m);if(run>=9){s+=20;why.push('sequência de '+run)}else if(run>=7){s+=10;why.push('sequência de '+run)}
+  const rl=pc32(m&last);if(rl===15){s+=40;why.push('igual ao último resultado')}else if(rl>=13){s+=20;why.push(rl+' dezenas do último resultado')}
+  let old=0;for(let i=0;i<N-1&&!old;i++)if(pc32(m&draws[i])>=14)old=i+1;if(old){s+=15;why.push('quase igual ao concurso '+old)}
+  const low=pc32(m&toMask(R(1,15)));if(low>=12){s+=10;why.push(low+' dezenas de 01 a 15')}
+  const imp=15-cntM(m,PAR);if(imp>=12||imp<=3){s+=10;why.push(imp>=12?'quase só ímpares':'quase só pares')}
+  if(cntM(m,MOL)>=15){s+=10;why.push('quase todo na moldura')}
+  return {s:Math.min(100,s),nivel:s>=35?'alta':s>=15?'média':'baixa',why}}
+
+// ---------- Otimizador de cobertura ----------
+function otimizarCobertura(Q,opt){opt=opt||{};const fx=(opt.fx||[]).filter(d=>d>=1&&d<=25),ex=(opt.ex||[]).filter(d=>d>=1&&d<=25&&!fx.includes(d));
+  if(fx.length>12)throw new Error('No máximo 12 dezenas fixas.');const pool=R(1,25).filter(d=>!fx.includes(d)&&!ex.includes(d)),pick=15-fx.length;if(pool.length<pick)throw new Error('Sobraram poucas dezenas livres.');
+  Q=Math.max(1,Math.min(60,Q|0));const smp=ftSample(),T=smp.slice(0,3000),EV=smp.slice(3000,23000),W=T.length;
+  const cand=[],seen=new Set();let tries=0;while(cand.length<Math.max(300,Q*12)&&tries<20000){tries++;const p=pool.slice();for(let i=0;i<pick;i++){const j=i+rndInt(p.length-i);[p[i],p[j]]=[p[j],p[i]]}const m=toMask(fx.concat(p.slice(0,pick)));if(seen.has(m))continue;seen.add(m);if(popScore(m).s>=(tries<12000?15:35))continue;
+    const c11=[],c13=[];for(let t=0;t<W;t++){const h=pc32(m&T[t]);if(h>=11){c11.push(t);if(h>=13)c13.push(t)}}cand.push({m,c11,c13})}
+  const cov11=new Int32Array(W),cov13=new Int32Array(W),chosen=[];const gain=c=>{let g=0;for(const t of c.c11)if(!cov11[t])g+=1;for(const t of c.c13)if(!cov13[t])g+=0.3;return g},add=(c,k)=>{for(const t of c.c11)cov11[t]+=k;for(const t of c.c13)cov13[t]+=k};
+  for(let q=0;q<Q&&q<cand.length;q++){let best=-1,bg=-1;for(let i=0;i<cand.length;i++){if(cand[i].used)continue;const g=gain(cand[i]);if(g>bg){bg=g;best=i}}cand[best].used=true;chosen.push(cand[best]);add(cand[best],1)}
+  const obj=()=>{let a=0,b=0;for(let t=0;t<W;t++){if(cov11[t])a++;if(cov13[t])b++}return a+0.3*b};let cur=obj();
+  for(let it=0;it<400&&chosen.length>1;it++){const i=rndInt(chosen.length),c=cand[rndInt(cand.length)];if(c.used)continue;add(chosen[i],-1);add(c,1);const v=obj();if(v>cur){chosen[i].used=false;c.used=true;chosen[i]=c;cur=v}else{add(c,-1);add(chosen[i],1)}}
+  const games=chosen.map(c=>c.m),ev=g=>{let a=0,b=0;for(const d of EV){let mx=0;for(const m of g){const h=pc32(m&d);if(h>mx)mx=h}if(mx>=11)a++;if(mx>=13)b++}return {pAny:a/EV.length,p13:b/EV.length}};
+  const r=ev(games),rnd=[];const used=new Set(games);for(let i=0;rnd.length<games.length&&i<5000;i++){const p=R(1,25);for(let k=0;k<15;k++){const j=k+rndInt(25-k);[p[k],p[j]]=[p[j],p[k]]}const m=toMask(p.slice(0,15));if(!used.has(m))rnd.push(m)}
+  const rr=ev(rnd);return {games,pAny:r.pAny,p13:r.p13,rndAny:rr.pAny,rnd13:rr.p13,fx,ex}}
+let CO={last:null};
+function coRun(){const P=prize();let Q=+$('coQ').value||0;const V=+$('coV').value||0;if(!Q&&V)Q=Math.floor(V/P.a+1e-9);if(!Q)throw new Error('Informe o valor ou a quantidade de jogos.');
+  const nums=x=>(x.match(/\d{1,2}/g)||[]).map(Number).filter(d=>d>=1&&d<=25),r=otimizarCobertura(Q,{fx:nums($('coF').value),ex:nums($('coX').value)});CO.last=r;return r}
+function coShow(r){const P=prize(),cost=r.games.length*P.a;$('coHead').textContent=r.games.length+' jogos de 15 dezenas';$('coBig').textContent=brl2(cost);$('coSub').textContent='Testado em 20 mil sorteios simulados, diferentes dos usados para montar.';
+  $('coK').innerHTML=[[pctF(r.pAny),'dos sorteios com pelo menos um prêmio'],[pctF(r.rndAny),'o mesmo número de jogos ao acaso'],[pctF(r.p13),'com 13 pontos ou mais em algum jogo'],[pctF(r.rnd13),'13+ com jogos ao acaso']].map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('');
+  $('coOut').innerHTML=`<div class="slip"><h3 style="margin-top:0">Os jogos</h3><div class="small dz">${r.games.map((m,i)=>(i+1)+') '+fromMask(m).map(p2).join(' ')+' · popularidade '+popScore(m).nivel).join('<br>')}</div>
+    <details style="margin-top:10px"><summary class="small">Testes feitos nas ferramentas</summary><ul class="small">${testarJogos(r.games).map(t=>'<li>'+esc(t)+'</li>').join('')}</ul></details></div>`;$('coSave').disabled=false}
+$('coGo').addEventListener('click',()=>{$('coErr').textContent='';try{coShow(coRun())}catch(e){$('coErr').textContent=e.message}});
+$('coSave').addEventListener('click',()=>{if(!CO.last)return;let all=[];try{all=JSON.parse(localStorage.getItem(JK)||'null')?.lotes||[]}catch(e){}all.unshift({quando:new Date().toISOString(),apos:draws.length,n:15,tipo:'Cobertura otimizada',jogos:CO.last.games.map(fromMask)});all=all.slice(0,40);try{localStorage.setItem(JK,JSON.stringify({lotes:all,jogos:all[0].jogos}))}catch(e){}$('coSave').textContent='Salvo para o concurso '+(draws.length+1);$('coSave').disabled=true});
+function renderCo(){if(!$('coV').value&&AS.cfg.bud)$('coV').value=AS.cfg.bud}
+
+// ---------- Vigia do sorteio ----------
+let VG={N:0,r:null};
+function vigiaCalc(){const N=draws.length;if(VG.N===N)return VG.r;buildPre();const win=[['Todos os concursos',0],['Últimos 500',N-500],['Últimos 100',N-100]].map(([nm,lo])=>{lo=Math.max(0,lo);const n=N-lo,e=0.6*n,sd=Math.sqrt(n*0.24);let chi=0;const z=R(1,25).map(d=>{const o=fcount(lo,N,d);chi+=(o-e)**2/(n*0.24);return {d,o,z:(o-e)/sd}});const p=gammaQ(12,chi/2),tam=Math.max(...z.map(x=>Math.abs(x.o-e)/e));return {nm,n,chi,p,z,tam,alerta:p<0.001||z.some(x=>Math.abs(x.z)>3.5)}});
+  VG={N,r:win};return win}
+function renderVig(){const W=vigiaCalc(),al=W.filter(w=>w.alerta);
+  $('vgOut').innerHTML=`<div class="plan" style="border-color:${al.length?'var(--gold)':'var(--line)'}"><h3 style="margin:0 0 6px">${W[1].alerta||W[2].alerta?'⚠️ Desvio recente encontrado em: '+esc(al.filter(w=>w!==W[0]).map(w=>w.nm).join(', ')):al.length?'✅ Sem desvio atual (há só uma diferença antiga e pequena no histórico completo)':'✅ Nenhum desvio: o sorteio está se comportando como acaso puro'}</h3>
+   <ul class="small" style="margin:0">${W.map(w=>`<li>${esc(w.nm)} (${w.n.toLocaleString('pt-BR')} concursos): chance de o acaso produzir essas diferenças = ${pctF(w.p)}; a dezena mais fora do esperado se afasta ${fmt(w.tam*100,1)}% da média${w.alerta?' ⚠️':''}</li>`).join('')}</ul>${W[0].alerta&&!W[1].alerta&&!W[2].alerta?'<p class="small" style="margin:6px 0 0"><b>Leitura:</b> no histórico completo há uma diferença pequena (de poucos por cento) que o acaso dificilmente explicaria, mas ela não aparece nos últimos 500 nem nos últimos 100 concursos. Ou seja, não há sinal de desvio atual que dê vantagem.</p>':''}
+   <p class="small" style="margin:6px 0 0">Só é desvio quando essa chance fica abaixo de 0,1% ou uma dezena se afasta mais de 3,5 desvios do esperado.</p></div>`;
+  const z=W[0].z.slice().sort((a,b)=>Math.abs(b.z)-Math.abs(a.z));
+  $('vgT').innerHTML='<thead><tr><th>Dezena</th><th class="num">Saiu (todos)</th><th class="num">Desvio (todos)</th><th class="num">Desvio (500)</th><th class="num">Desvio (100)</th></tr></thead><tbody>'+z.map(x=>`<tr><td><b>${p2(x.d)}</b></td><td class="num">${x.o}</td>${[0,1,2].map(k=>{const v=W[k].z[x.d-1].z;return `<td class="num"${Math.abs(v)>3.5?' style="color:var(--gold);font-weight:700"':''}>${(v>=0?'+':'')+fmt(v,1)}</td>`}).join('')}</tr>`).join('')+'</tbody>'}
+function renderVigHome(){const W=vigiaCalc(),al=W.slice(1).filter(w=>w.alerta);$('asVig').innerHTML=al.length?`<div class="plan" style="border-color:var(--gold);margin-bottom:10px"><b>⚠️ Vigia do sorteio:</b> desvio estatístico em ${esc(al.map(w=>w.nm.toLowerCase()).join(', '))}. <a href="#vigia">Ver detalhes</a></div>`:''}
+
+// ---------- Painel de resultado e limite ----------
+const LIM_K='lf_limite_v1';
+function painelCalc(){const N=draws.length;let all=[];try{all=JSON.parse(localStorage.getItem(JK)||'null')?.lotes||[]}catch(e){}
+  const meses={};let gConf=0;const add=(mes,g,w,conf,prem)=>{const x=meses[mes]=meses[mes]||{g:0,w:0,conf:0,prem:0};x.g+=g;x.w+=w;x.conf+=conf;x.prem+=prem};
+  all.forEach(L=>{const c=L.apos+1,mes=(L.quando||'').slice(0,7)||'—',g=L.jogos.reduce((a,ds)=>a+custoDs(ds),0);let w=0,pr=0;if(c<=N){gConf+=g;L.jogos.forEach(ds=>{const r=premioJogo(ds,draws[c-1],c);w+=r.v;if(r.v>0)pr++})}add(mes,g,w,c<=N?L.jogos.length:0,pr)});
+  tmLoad().forEach(T=>{const S=tmStatus(T);gConf+=S.gasto;add((T.criado||'').slice(0,7)||'—',S.gasto,S.rec,S.feitos,S.prem)});
+  const mesAtual=new Date().toISOString().slice(0,7),tot=Object.values(meses).reduce((a,x)=>({g:a.g+x.g,w:a.w+x.w,conf:a.conf+x.conf,prem:a.prem+x.prem}),{g:0,w:0,conf:0,prem:0});
+  let lim=0;try{lim=+localStorage.getItem(LIM_K)||0}catch(e){}return {meses,tot,gConf,mesAtual,gMes:(meses[mesAtual]||{g:0}).g,lim}}
+function renderDin(){const D=painelCalc();if(D.lim&&!$('dnLim').value)$('dnLim').value=D.lim;const ks=Object.keys(D.meses).sort().reverse(),T=D.tot,esp=D.gConf*termoCalc().base;
+  $('dnOut').innerHTML=!ks.length?'<p class="lead">Nenhum jogo salvo ainda. Salve os jogos que você fizer (botão Salvar) para o painel contar.</p>':
+   `<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">${[[brl2(T.g),'gasto total'],[brl2(T.w),'prêmios recebidos'],[(T.w-T.g>=0?'+':'−')+brl2(Math.abs(T.w-T.g)),'saldo'],[brl2(esp),'o que a média esperaria de volta (jogos já sorteados)']].map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
+   <p class="small" style="margin-top:10px">${T.conf?T.prem+' prêmio(s) em '+T.conf+' jogo(s) conferido(s). ':''}${esp?'Você está '+(T.w>=esp?fmt((T.w/esp-1)*100,0)+'% acima':fmt((1-T.w/esp)*100,0)+'% abaixo')+' do que a média esperaria.':''}</p>
+   <div class="scroll"><table class="stack"><thead><tr><th>Mês</th><th class="num">Gasto</th><th class="num">Prêmios</th><th class="num">Saldo</th></tr></thead><tbody>${ks.map(k=>{const x=D.meses[k];return `<tr><td>${esc(k)}</td><td class="num">${esc(brl2(x.g))}</td><td class="num">${esc(brl2(x.w))}</td><td class="num">${esc((x.w-x.g>=0?'+':'−')+brl2(Math.abs(x.w-x.g)))}</td></tr>`}).join('')}</tbody></table></div>`;
+  renderLimHome()}
+function renderLimHome(){const D=painelCalc();if(!D.lim){$('asLim').innerHTML='';return}const f=D.gMes/D.lim;$('asLim').innerHTML=f>=0.8?`<div class="plan" style="border-color:var(--gold);margin-bottom:10px"><b>${f>=1?'🛑 Limite do mês atingido':'⚠️ Perto do limite do mês'}:</b> ${esc(brl2(D.gMes))} de ${esc(brl2(D.lim))}.</div>`:''}
+$('dnLimOk').addEventListener('click',()=>{try{localStorage.setItem(LIM_K,String(+$('dnLim').value||0))}catch(e){}renderDin()});
+
+// ---------- Calendário do orçamento ----------
+function calendario(B){const N=draws.length,T0=termoCalc(),fzP=Object.keys(FZ_INFO).map(c=>FZ_INFO[c][1]).filter(Boolean).map(v=>+String(v).replace(/\./g,'').replace(',','.')).filter(v=>v>0).sort((a,b)=>a-b),Efz=fzP.length?fzP[Math.floor(fzP.length/2)]:null;
+  const rFz=Efz?termoCalc(Efz).ret:T0.base,lista=R(N+1,N+26).map(c=>{const r=c===N+1?T0.ret:c%10===0?rFz:T0.base;return {c,r,tipo:c===N+1?'próximo (termômetro)':c%10===0?'final zero':'comum'}});
+  const w=lista.map(x=>Math.max(0.25,x.r/T0.base)**2),sw=w.reduce((a,b)=>a+b,0),P=prize();
+  lista.forEach((x,i)=>{x.jogos=Math.floor(B*w[i]/sw/P.a+1e-9);x.v=x.jogos*P.a});let sobra=B-lista.reduce((a,x)=>a+x.v,0);
+  const ord=lista.slice().sort((a,b)=>b.r-a.r);for(const x of ord){while(sobra>=P.a-1e-9){x.jogos++;x.v+=P.a;sobra-=P.a;break}}
+  const evCal=lista.reduce((a,x)=>a+x.v*x.r,0),flat=B*lista.reduce((a,x)=>a+x.r,0)/lista.length;return {lista,evCal,flat,B,rFz,base:T0.base}}
+function renderCal(){const B=+$('caB').value||0;if(!B){$('caOut').innerHTML='<p class="small">Informe o orçamento do mês.</p>';return}const C=calendario(B);
+  $('caOut').innerHTML=`<p style="margin:8px 0">Retorno médio esperado: <b>${esc(brl2(C.evCal))}</b> com o calendário, contra ${esc(brl2(C.flat))} gastando igual em todo concurso.${C.evCal<C.flat*1.02?' A diferença é pequena neste mês porque nenhum concurso próximo tem prêmio muito acima do normal; ela cresce quando há prêmio acumulado.':''}</p>
+   <div class="scroll"><table class="stack"><thead><tr><th>Concurso</th><th>Tipo</th><th class="num">Jogos de 15</th><th class="num">Valor</th></tr></thead><tbody>${C.lista.filter(x=>x.jogos>0).map(x=>`<tr><td>${x.c}</td><td>${esc(x.tipo)}</td><td class="num">${x.jogos}</td><td class="num">${esc(brl2(x.v))}</td></tr>`).join('')}</tbody></table></div>
+   <p class="small">Concursos que não aparecem ficam sem aposta. Final zero usa o prêmio típico desses concursos; o próximo usa o termômetro. Concursos especiais (como a Independência) entram quando a Caixa divulgar a estimativa.</p>`}
+$('caGo').addEventListener('click',renderCal);
 // ---------- navegação ----------
-const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:()=>{renderMt();renderSc()},assistente:renderAs,boloes:renderBo,teimosinha:renderTm,meubolao:renderMbo,laboratorio:renderLab,tendencia:renderTend,calc:()=>{renderCl();renderSim()},ciclos:()=>{}};
+const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:()=>{renderMt();renderSc()},assistente:renderAs,boloes:renderBo,teimosinha:renderTm,meubolao:renderMbo,laboratorio:renderLab,cobertura:renderCo,vigia:renderVig,dinheiro:renderDin,tendencia:renderTend,calc:()=>{renderCl();renderSim()},ciclos:()=>{}};
 let DIRTY=new Set(Object.keys(RENDERS));
 function renderAll(){render();cst=null;DIRTY=new Set(Object.keys(RENDERS));const m=curMod();if(RENDERS[m]){DIRTY.delete(m);RENDERS[m]()}}
 const GROUPS=[
- ['resumo','Início',[['assistente','Assistente'],['resumo','Coordenador e painel']]],
+ ['resumo','Início',[['assistente','Assistente'],['dinheiro','Meu dinheiro'],['resumo','Coordenador e painel']]],
  ['resultados','Resultados',[['ausentes','Último resultado e conferidor'],['finalzero','Final zero']]],
- ['dezenas','Dezenas',[['frequencia','Frequência'],['comportamento','Comportamento'],['analise','Sequências e atrasos'],['ciclos','Ciclos'],['tendencia','Gráfico de tendência']]],
+ ['dezenas','Dezenas',[['frequencia','Frequência'],['comportamento','Comportamento'],['analise','Sequências e atrasos'],['ciclos','Ciclos'],['tendencia','Gráfico de tendência'],['vigia','Vigia do sorteio']]],
  ['padroes-g','Padrões',[['padroes','Pares, primos e grupos'],['soma','Soma'],['linhas','Linhas e colunas'],['naipes','Naipes'],['sequencias','Sequências e saltos'],['posicoes','Posições'],['pareto','Pareto']]],
  ['comb','Combinações',[['combinar','Simulador de combinações'],['trincas','Duplas e trincas'],['duques','Afinidade (duques)']]],
- ['jogos','Jogos',[['montar','Montar jogo e testar'],['gerador','Gerador e fechamentos'],['calc','Calculadora de probabilidades'],['boloes','Avaliador de bolões'],['teimosinha','Teimosinha'],['meubolao','Meu bolão'],['laboratorio','Laboratório de métodos'],['filtros','Filtros']]]];
+ ['jogos','Jogos',[['montar','Montar jogo e testar'],['gerador','Gerador e fechamentos'],['calc','Calculadora de probabilidades'],['boloes','Avaliador de bolões'],['cobertura','Otimizador de cobertura'],['teimosinha','Teimosinha'],['meubolao','Meu bolão'],['laboratorio','Laboratório de métodos'],['filtros','Filtros']]]];
 const ALLMODS=GROUPS.flatMap(g=>g[2].map(x=>x[0]));
 function curMod(){const h=location.hash.slice(1);return ALLMODS.includes(h)&&document.getElementById('m-'+h)?h:(document.getElementById('m-assistente')?'assistente':'resumo')}
 $('gnav').innerHTML=GROUPS.map(g=>`<a href="#${g[2][0][0]}" data-g="${g[0]}">${esc(g[1])}</a>`).join('');

@@ -306,7 +306,7 @@ header.top .band,header.top.band{padding-bottom:20px}
         <p class="small"><b>Opção paga: Anthropic (Claude).</b> Chave que começa com <b>sk-ant-</b>, cobrada por uso na sua conta da API.</p>
         <p class="small">A chave fica guardada <b>só neste navegador</b> e vai direto para o Google ou para a Anthropic. Cada aparelho precisa da chave salva uma vez. Não use em computador compartilhado. Dentro do Claude, nenhuma chave é necessária.</p>
         <div class="formrow">
-          <label>Serviço<select id="apiProv"><option value="gemini">Google Gemini (grátis)</option><option value="anthropic">Anthropic (pago)</option></select></label>
+          <label>Serviço<select id="apiProv"><option value="gemini">Google Gemini (grátis)</option><option value="anthropic">Anthropic / Claude Haiku (pago, centavos)</option></select></label>
           <label>Chave<input id="apiKey" type="password" autocomplete="off" spellcheck="false" style="width:min(22em,80vw)" placeholder="AIza… ou sk-ant-…"></label>
           <label>Modelo (opcional)<input id="apiModel" style="width:12em" placeholder="automático"></label>
         </div>
@@ -1338,6 +1338,10 @@ header.top .band,header.top.band{padding-bottom:20px}
 <section class="band" style="padding-top:0"><div class="wrap">
   <h3>2. Sua carteira de bolões para hoje</h3>
   <div id="boCart"></div>
+  <div class="slip" style="margin-top:16px"><h3 style="margin-top:0">Análise da IA</h3>
+    <p class="small" style="margin:0 0 8px">A IA lê o ranking e a carteira calculados pelo app e explica, em linguagem simples, quais bolões combinam melhor com o seu objetivo de receber fatias com frequência, e por quê.</p>
+    <div class="formrow"><button id="boAsk">Pedir análise da IA</button></div>
+    <div class="err" id="boAErr"></div><div id="boAI" style="white-space:pre-wrap"></div></div>
   <h3 style="margin-top:28px">3. Todos os bolões testados, do menor ao maior custo por vez que você recebe</h3>
   <p class="lead" id="boLead"></p>
   <div class="scroll"><table class="stack" id="boT"></table></div>
@@ -1537,7 +1541,7 @@ function apiSample(){const fn=async(input,opts={})=>{const cfg=apiCfg();if(!cfg|
       contents.push({role:'user',parts:resp})}
     return {text:finalText,truncated:false}}
   const tools=toolsIn.map(t=>({name:t.name,description:t.description||'',input_schema:t.inputSchema||{type:'object',properties:{}}}));
-  for(let it=0;it<14;it++){const body={model:cfg.model||'claude-sonnet-5-5',max_tokens:4096,messages:msgs};if(tools.length)body.tools=tools;
+  for(let it=0;it<14;it++){const body={model:cfg.model||'claude-haiku-5-5',max_tokens:4096,messages:msgs};if(tools.length)body.tools=tools;
     const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',signal:opts.signal,headers:{'content-type':'application/json','x-api-key':cfg.key,'anthropic-version':'2026-10-21','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify(body)});
     if(!res.ok)fail(res.status,await res.text(),'API');
     const msg=await res.json();msgs.push({role:'assistant',content:msg.content});
@@ -2918,13 +2922,27 @@ $('asName').addEventListener('change',()=>{AS.cfg.nome=$('asName').value.trim().
 $('asCrit').addEventListener('change',()=>{AS.cfg.crit=[...document.querySelectorAll('#asCrit input:checked')].map(x=>x.value);asSave()});
 // Modo rápido (IA gratuita): o app monta o plano na hora, sem IA; a IA só comenta, numa única consulta, sem travar a tela.
 async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.cfg.nome||'Robson';
-  const mB=text.match(/(?:R\$\s*|gastar\s*|or[çc]amento\s*(?:de\s*)?)(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*reais/i);if(mB){$('asBud').value=parseFloat((mB[1]||mB[2]).replace(',','.'));try{AS.cfg.bud=+$('asBud').value;asSave()}catch(e){}}
+  const nums=x=>(x.match(/\d{1,2}/g)||[]).map(Number).filter(v=>v>=1&&v<=25),o={};let m;
+  if(m=text.match(/(\d{1,3})\s*(?:jogos|jogo|apostas|aposta|cart[õo]es|volantes)\b/i))o.Q=+m[1];
+  if(m=text.match(/(1[5-9]|20)\s*dezenas/i))o.n=+m[1];
+  if(m=text.match(/fix\w*\s+(?:as\s+|a\s+|os\s+)?(?:dezenas?\s+|n[úu]meros?\s+)?((?:\d{1,2}[\s,;e]*)+)/i))o.fx=nums(m[1]);
+  if(m=text.match(/(?:tir\w*|exclu\w*|remov\w*|sem)\s+(?:as\s+|a\s+|os\s+|o\s+)?(?:dezenas?\s+|n[úu]meros?\s+)?((?:\d{1,2}[\s,;e]*)+)/i))o.rm=nums(m[1]);
+  if(m=text.match(/garant\w*\s*(?:de\s*)?(1[1-5])/i))o.gar=+m[1];
+  const matQ=text.match(/(\d{1,3})\s*(?:jogos|apostas)\s+com\s+(1[6-9]|20)\s*dezenas/i)||(/matriz/i.test(text)&&!/garant/i.test(text)?text.match(/()(1[6-9]|20)\s*dezenas/i):null);
+  if(matQ){o.fmt='mat';o.k=+matQ[2];if(matQ[1])o.Q=+matQ[1];else delete o.Q;delete o.n}
+  else if(o.gar||/fechamento|matriz|garantia/i.test(text)){o.fmt='gar';if(o.n){o.k=o.n;delete o.n}delete o.Q}
+  else if(o.n){o.fmt=o.n===16?'16':'15';$('apFmt').value=o.fmt}else if(o.Q){o.fmt='15';o.n=15;$('apFmt').value='15'}
+  if(o.fmt==='gar')$('apFmt').value='gar';if(o.fmt==='mat')$('apFmt').value='15';
+  const temOrdem=!!(o.Q||o.n||o.k||o.gar||o.fmt||(o.fx&&o.fx.length)||(o.rm&&o.rm.length));
+  const soNum=/^\s*(?:r\$\s*)?\d+(?:[.,]\d{1,2})?\s*(?:reais)?\s*$/i.test(text);const mB=soNum||AS.pediuValor&&!temOrdem&&/\d/.test(text)?text.match(/(\d+(?:[.,]\d{1,2})?)/):text.match(/(?:R\$\s*|gastar\s*|or[çc]amento\s*(?:de\s*)?)(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*reais/i);AS.pediuValor=false;if(mB){$('asBud').value=parseFloat((mB[1]||mB[2]).replace(',','.'));try{AS.cfg.bud=+$('asBud').value;asSave()}catch(e){}}
   if(/garantia|fechamento|matriz/i.test(text))$('apFmt').value='gar';else if(/16\s*dezenas|apostas?\s+de\s+16/i.test(text))$('apFmt').value='16';else if(/jogos?\s+de\s+15|15\s*dezenas/i.test(text))$('apFmt').value='15';
-  const bud=+$('asBud').value||0,quer=/plano|mont|jogo|matriz|fechamento|gastar|R\$|reais|or[çc]amento|aposta/i.test(text);
+  const bud=+$('asBud').value||0,quer=!!mB||temOrdem||/plano|mont|jogo|matriz|fechamento|gastar|R\$|reais|or[çc]amento|aposta/i.test(text);
   let ctx='';
-  if(quer){if(!bud){asPush('ai',nm+', quanto você quer gastar hoje? Escreva o valor (por exemplo: "quero gastar R$ 35") ou preencha “Quanto quer gastar hoje”, e eu monto o plano na hora.');return}
-    planoAuto();if(!AS.plan){asPush('ai',$('apErr').textContent||'Não consegui montar o plano com esse orçamento.');return}
-    asPush('ai',AS.plan.just);ctx='PLANO JÁ MONTADO E MOSTRADO A ELE:\n'+AS.plan.just}
+  if(quer){if(!bud&&!(o.fmt==='mat'||o.Q&&o.fmt!=='gar')){AS.pediuValor=true;AS.ordem=o;asPush('ai',nm+', quanto você quer gastar hoje? Escreva o valor (por exemplo: "quero gastar R$ 35") ou preencha “Quanto quer gastar hoje”, e eu monto o plano na hora.');return}
+    if(!temOrdem&&AS.ordem){Object.assign(o,AS.ordem)}AS.ordem=null;
+    planoAuto(o);if(!AS.plan){asPush('ai',$('apErr').textContent||'Não consegui montar o plano com esse orçamento.');return}
+    const ent=[o.Q?o.Q+' jogos':'',o.n&&o.fmt!=='mat'?'de '+o.n+' dezenas':'',o.fmt==='mat'?'matriz com '+o.k+' dezenas':o.fmt==='gar'?'fechamento'+(o.k?' de '+o.k+' dezenas':'')+(o.gar?' com garantia de '+o.gar+' pontos':''):'',o.fx&&o.fx.length?'fixando '+o.fx.map(p2).join(', '):'',o.rm&&o.rm.length?'tirando '+o.rm.map(p2).join(', '):''].filter(Boolean).join(', ');
+    asPush('ai',(ent?'Entendi: '+ent+'.\n\n':'')+AS.plan.just+'\n\nOs jogos estão no quadro do plano, nesta mesma tela: toque em salvar se gostar, ou me peça outro valor ou formato.');return}
   let est={};try{est=asTools().find(t=>t.name==='estado_atual').execute({})}catch(e){}
   const bubble=asPush('ai',quer?'💬 A IA está escrevendo um comentário…':'⏳ Pensando…',' ');$('asSend').disabled=true;$('asStop').hidden=false;AS.ctrl=new AbortController();
   const prompt=`Você é o assistente de ${nm} num app da Lotofácil. Responda em português do Brasil, chamando-o pelo nome, em no máximo ${quer?'4 frases':'8 frases'}, texto simples sem markdown.
@@ -2966,35 +2984,42 @@ $('asQR').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)
   $('apiSave').addEventListener('click',async()=>{const k=$('apiKey').value.trim(),prov=$('apiProv').value;if(!k){st('Cole a chave antes de salvar.');return}
     let model=$('apiModel').value.trim();
     if(prov==='gemini'){st('Testando a chave no Google…');try{if(!model||/^claude/.test(model))model=await gemPickModel(k)}catch(e){st(e.status===400||e.status===403?'O Google recusou a chave. Confira se copiou a chave inteira do Google AI Studio.':'Não consegui falar com o Google agora ('+e.message+'). Tente de novo.');return}}
-    else if(!model||/^gemini/.test(model))model='claude-sonnet-5-5';
+    else if(!model||/^gemini/.test(model))model='claude-haiku-5-5';
     try{localStorage.setItem(API_K,JSON.stringify({prov,key:k,model}));$('apiKey').value='';show(apiCfg());st($('apiSt').textContent+' O assistente e os agentes já podem usá-la.')}catch(e){st('Não foi possível salvar neste navegador.')}});
   $('apiDel').addEventListener('click',()=>{try{localStorage.removeItem(API_K)}catch(e){}st('Chave apagada deste navegador.')});})();
 $('asNew').addEventListener('click',()=>{AS.hist=[];AS.plan=null;drawPlan();$('asLog').innerHTML='';renderAs()});
 
 // ---------- Plano automático (regras, sem IA) ----------
-function planoAuto(){$('apErr').textContent='';const fail=m=>{$('apErr').textContent=m;AS.plan=null;drawPlan()};const N=draws.length,nm=AS.cfg.nome||'Robson',bud=+$('asBud').value||0,P=prize(),fmtSel=$('apFmt').value,crit=new Set(AS.cfg.crit);
-  if(!bud){fail('Informe quanto quer gastar hoje.');return}
+function planoAuto(o){o=(o&&!o.type)?o:{};$('apErr').textContent='';const fail=m=>{$('apErr').textContent=m;AS.plan=null;drawPlan()};const N=draws.length,nm=AS.cfg.nome||'Robson',bud=+$('asBud').value||0,P=prize(),fmtSel=o.fmt||$('apFmt').value,isG=fmtSel==='gar'||fmtSel==='mat',crit=new Set(AS.cfg.crit);
+  if(!bud&&!(o.fmt==='mat'||o.Q&&o.fmt!=='gar')){fail('Informe quanto quer gastar hoje.');return}
   if(!st)render();buildPre();const last=draws[N-1],why=[];
   const f100=d=>fcount(N-100,N,d),atr=d=>{let s=0;for(let i=N-1;i>=0&&!has(draws[i],d);i--)s++;return s};
   // 1) fixas e removidas pelos critérios
   let fx=[],rm=[];
   if(crit.has('ciclo')&&st.cur.pend.length){const pend=st.cur.pend.slice().sort((a,b)=>atr(b)-atr(a));fx=pend.slice(0,Math.min(4,pend.length)).sort((a,b)=>a-b);
-    why.push('Fechamento do ciclo: '+(fmtSel==='gar'?'incluí entre as dezenas do fechamento ':'fixei em todos os jogos ')+fx.map(p2).join(', ')+(pend.length>fx.length?' (as '+fx.length+' mais atrasadas das '+pend.length+' pendentes)':'')+', que ainda faltam no ciclo '+st.cur.cyc+'.')}
+    why.push('Fechamento do ciclo: '+(isG?'incluí entre as dezenas do fechamento ':'fixei em todos os jogos ')+fx.map(p2).join(', ')+(pend.length>fx.length?' (as '+fx.length+' mais atrasadas das '+pend.length+' pendentes)':'')+', que ainda faltam no ciclo '+st.cur.cyc+'.')}
   if(crit.has('freq')){const ord=R(1,25).filter(d=>!fx.includes(d)).sort((a,b)=>f100(a)-f100(b)||a-b);rm=ord.slice(0,2);
-    const late=R(1,25).filter(d=>!fx.includes(d)&&!rm.includes(d)).sort((a,b)=>atr(b)-atr(a))[0];if(late&&atr(late)>=3&&fx.length<5){fx.push(late);why.push('Atrasos: '+(fmtSel==='gar'?'incluí':'fixei')+' também a '+p2(late)+', com '+atr(late)+' concursos sem sair.')}
+    const late=R(1,25).filter(d=>!fx.includes(d)&&!rm.includes(d)).sort((a,b)=>atr(b)-atr(a))[0];if(late&&atr(late)>=3&&fx.length<5){fx.push(late);why.push('Atrasos: '+(isG?'incluí':'fixei')+' também a '+p2(late)+', com '+atr(late)+' concursos sem sair.')}
     why.push('Frequência: tirei '+rm.map(p2).join(' e ')+', as menos sorteadas nos últimos 100 concursos ('+rm.map(d=>f100(d)+' vezes').join(' e ')+').')}
+  if(o.fx&&o.fx.length){fx=o.fx.slice();for(let q=why.length-1;q>=0;q--)if(/^(Fechamento do ciclo|Atrasos)/.test(why[q]))why.splice(q,1);rm=rm.filter(d=>!o.fx.includes(d));why.push('Seu pedido: fixei '+o.fx.map(p2).join(', ')+(isG?' entre as dezenas do fechamento.':' em todos os jogos.'))}
+  if(o.rm&&o.rm.length){rm=o.rm.slice();for(let q=why.length-1;q>=0;q--)if(/^Frequência/.test(why[q]))why.splice(q,1);fx=fx.filter(d=>!o.rm.includes(d));why.push('Seu pedido: tirei '+o.rm.map(p2).join(', ')+' de todos os jogos.')}
   fx.sort((a,b)=>a-b);
   const useRep=crit.has('repet'),useF=crit.has('filtros');
-  if(fmtSel==='gar'){if(useRep||useF)why.push('Repetidas e filtros: não entram no fechamento com garantia, porque a garantia depende de usar exatamente as combinações calculadas.')}
+  if(isG){if(useRep||useF)why.push('Repetidas e filtros: não entram no fechamento com garantia, porque a garantia depende de usar exatamente as combinações calculadas.')}
   else{if(useRep)why.push('Repetidas: cada jogo mantém '+(fmtSel==='16'?'pelo menos 8':'de 8 a 10')+' dezenas do concurso '+N+'.');if(useF)why.push(fmtSel==='16'?'Filtros: valem só para jogos de 15, então não entram nas apostas de 16.':'Filtros: todos os jogos passam nos 10 filtros da aba Filtros.')}
   const ok15=m=>{if(useF&&!FILTROS.every(F=>{const v=F.f(m,last);return v>=F.mn&&v<=F.mx}))return false;if(useRep){const r=pc32(m&last);if(r<8||r>10)return false}return true};
   // 2) formato dentro do orçamento
   let games=[],n=15,desc='';
-  if(fmtSel==='gar'){const opts=[[18,14],[18,13],[17,14],[17,13],[16,14],[16,13],[20,13],[19,13],[20,12],[18,12],[16,12]];const order=R(1,25).filter(d=>!rm.includes(d)).sort((a,b)=>(fx.includes(b)-fx.includes(a))||(f100(b)-f100(a))||a-b);
-    let done=false;for(const [k,g] of opts){if(k>order.length)continue;const C=order.slice(0,k).sort((a,b)=>a-b);const r=asTools().find(t=>t.name==='montar_fechamento_garantia').execute({dezenas:C,garantia:g});
+  if(fmtSel==='mat'){const k=Math.max(16,Math.min(20,o.k||16)),order=R(1,25).filter(d=>!rm.includes(d)).sort((a,b)=>(fx.includes(b)-fx.includes(a))||(f100(b)-f100(a))||a-b);
+    if(order.length<k){fail('Sobram só '+order.length+' dezenas depois das retiradas.');return}const C=order.slice(0,k).sort((a,b)=>a-b),tot=comb(k,15),Qm=o.Q?Math.min(o.Q,tot):bud?Math.max(1,Math.min(tot,Math.floor(bud/P.a+1e-9))):tot;
+    let r;try{r=asTools().find(t=>t.name==='montar_fechamento').execute({fixas:[],removidas:R(1,25).filter(d=>!C.includes(d)),dezenas_por_jogo:15,quantidade:Qm})}catch(e){fail(e.message);return}
+    games=AS.lastGen.games;n=15;desc='Matriz: '+games.length+' jogos com '+k+' dezenas ('+C.map(p2).join(' ')+')';
+    why.push('Formato: '+(o.Q?'você pediu '+o.Q+' jogos com '+k+' dezenas':'matriz com '+k+' dezenas, '+games.length+' jogos dentro do orçamento')+'. Escolhi as '+k+' dezenas '+C.map(p2).join(' ')+(fx.length?', incluindo '+fx.map(p2).join(', '):'')+(rm.length?' e deixando de fora '+rm.map(p2).join(', '):'')+'. '+(Qm>=tot?'São todas as '+tot+' combinações de 15 dentro delas: se as 15 sorteadas estiverem entre essas '+k+' dezenas, um jogo faz 15 pontos.':'Com '+games.length+' jogos, se as 15 sorteadas estiverem entre essas '+k+' dezenas, o melhor jogo faz pelo menos '+r.garantia.pontos_minimos+' pontos.')+' Chance de as 15 sorteadas caírem dentro dessas '+k+': '+umEm(comb(k,15)/TOT)+'.'+(o.Q>tot?' (Só existem '+tot+' jogos diferentes com '+k+' dezenas.)':''))}
+  else if(fmtSel==='gar'){const opts=[[18,14],[18,13],[17,14],[17,13],[16,14],[16,13],[20,13],[19,13],[20,12],[18,12],[16,12]];const order=R(1,25).filter(d=>!rm.includes(d)).sort((a,b)=>(fx.includes(b)-fx.includes(a))||(f100(b)-f100(a))||a-b);
+    let done=false;for(const [k,g] of opts){if(k>order.length)continue;if(o.gar&&g!==o.gar)continue;if(o.k&&k!==o.k)continue;const C=order.slice(0,k).sort((a,b)=>a-b);const r=asTools().find(t=>t.name==='montar_fechamento_garantia').execute({dezenas:C,garantia:g});
       if(r.custo<=bud+1e-9){games=AS.lastGen.games;n=15;desc='Fechamento: '+k+' dezenas, garantia de '+g+' pontos';why.push('Formato: com '+brl2(bud)+' coube um fechamento de '+k+' dezenas ('+C.map(p2).join(' ')+') que garante '+g+' pontos se as 15 sorteadas estiverem entre elas. A chance disso é '+r.chance_da_condicao+'.');done=true;break}}
-    if(!done){fail('Nenhum fechamento com garantia cabe em '+brl2(bud)+'. O menor custa R$ 21,00 (6 jogos).');return}}
-  else{n=fmtSel==='16'?16:15;const per=comb(n,15)*P.a,Q=Math.min(200,Math.floor(bud/per+1e-9));if(Q<1){fail('Com '+brl2(bud)+' não cabe nenhuma aposta de '+n+' dezenas ('+brl2(per)+' cada).');return}
+    if(!done){fail(o.gar||o.k?'Não encontrei um fechamento'+(o.k?' de '+o.k+' dezenas':'')+(o.gar?' com garantia de '+o.gar+' pontos':'')+' que caiba em '+brl2(bud)+'. Opções: garantia de 12, 13 ou 14 pontos, com 16 a 20 dezenas. Aumente o valor ou peça outra garantia.':'Nenhum fechamento com garantia cabe em '+brl2(bud)+'. O menor custa R$ 21,00 (6 jogos).');return}}
+  else{n=o.n||(fmtSel==='16'?16:15);if(fx.length>=n){fail('Há '+fx.length+' dezenas fixas para jogos de '+n+' dezenas. Fixe menos dezenas.');return}const per=comb(n,15)*P.a,Q=o.Q?Math.min(200,o.Q):Math.min(200,Math.floor(bud/per+1e-9));if(Q<1){fail('Com '+brl2(bud)+' não cabe nenhuma aposta de '+n+' dezenas ('+brl2(per)+' cada).');return}
     const pool=R(1,25).filter(d=>!fx.includes(d)&&!rm.includes(d)),pick=n-fx.length,use={},seen=new Set();pool.forEach(d=>use[d]=0);
     for(let g=0;g<Q;g++){let best=null,bs=1e18;for(let t=0;t<400;t++){const p=pool.slice();for(let i=0;i<pick;i++){const j=i+rndInt(p.length-i);[p[i],p[j]]=[p[j],p[i]]}const ch=p.slice(0,pick),m=toMask(fx.concat(ch));if(seen.has(m))continue;
         if(n===15&&!ok15(m))continue;if(n>15&&useRep){const r=pc32(m&last);if(r<8)continue}
@@ -3002,12 +3027,12 @@ function planoAuto(){$('apErr').textContent='';const fail=m=>{$('apErr').textCon
       if(!best)break;seen.add(best.m);games.push(best.m);best.ch.forEach(d=>use[d]++)}
     if(!games.length){fail('Não achei jogos que passem em todos os critérios. Desmarque algum critério.');return}
     desc=games.length+' jogo(s) de '+n+(fx.length?', fixas '+fx.map(p2).join(' '):'')+(rm.length?', sem '+rm.map(p2).join(' '):'');
-    why.push('Formato: com '+brl2(bud)+' couberam '+games.length+' aposta(s) de '+n+' dezenas, com as dezenas livres distribuídas de forma equilibrada.')}
+    why.push(o.Q?'Formato: você pediu '+o.Q+' jogo(s) de '+n+' dezenas'+(games.length<o.Q?'; só encontrei '+games.length+' diferentes que passam nos critérios':'')+', com as dezenas livres distribuídas de forma equilibrada.':'Formato: com '+brl2(bud)+' couberam '+games.length+' aposta(s) de '+n+' dezenas, com as dezenas livres distribuídas de forma equilibrada.')}
   const free=R(1,25).filter(d=>!fx.includes(d)&&!rm.includes(d)),cost=custoJogos(games.length,n);
-  let gtxt='';if(fmtSel!=='gar'&&n===15){const ev=evalPure(games,fx,free),pc=(fx.length+rm.length)?comb(25-fx.length-rm.length,15-fx.length)/TOT:1;
+  let gtxt='';if(!isG&&n===15){const ev=evalPure(games,fx,free),pc=(fx.length+rm.length)?comb(25-fx.length-rm.length,15-fx.length)/TOT:1;
     gtxt='Se as fixas saírem e as retiradas ficarem de fora (chance de '+(fx.length+rm.length?umEm(pc):'100%')+'), o melhor jogo faz pelo menos '+ev.minimo+' pontos'+(ev.exato?'':' (estimativa)')+(ev.minimo<11?'; em '+(ev.pct_ao_menos[11]>=99.95?'mais de 99,9':fmt(ev.pct_ao_menos[11],1))+'% desses casos, algum jogo faz 11 ou mais.':'.')}
   const h=histPure(games,n);
-  const just=nm+', para o concurso '+(N+1)+' montei '+games.length+' jogo(s) por '+brl2(cost)+' (orçamento: '+brl2(bud)+').\n\n'+why.map(x=>'• '+x).join('\n')+(gtxt?'\n\n'+gtxt:'')+
+  const just=nm+', para o concurso '+(N+1)+' montei '+games.length+' jogo(s) por '+brl2(cost)+(bud?(cost>bud+1e-9?' (acima do orçamento de '+brl2(bud)+', porque você pediu '+games.length+' jogos)':' (orçamento: '+brl2(bud)+')'):'')+'.\n\n'+why.map(x=>'• '+x).join('\n')+(gtxt?'\n\n'+gtxt:'')+
     '\n\nNo histórico, estes jogos teriam dado prêmio em '+fmt(h.pct_com_premio,1)+'% dos concursos, com retorno de '+h.retorno_pct+'% do valor gasto (a conferência no passado só ilustra a variação).\n\nLembrete honesto: esses critérios organizam o jogo do jeito que você gosta, mas não aumentam a chance de prêmio. O retorno médio de qualquer aposta é cerca de 41% do valor.';
   AS.lastGen={games,n,desc};AS.plan={games,n,desc,titulo:'Plano automático do concurso '+(N+1),just,custo:cost};drawPlan();
   try{AS.cfg.bud=bud;AS.cfg.fmt=fmtSel;asSave()}catch(e){}
@@ -3188,6 +3213,24 @@ const BO_BM=`(async()=>{if(!/(^|\\.)caixa\\.gov\\.br$/.test(location.hostname)){
     if(L.length){BO.list=L;BO.concurso=+d.c||BO.concurso;BO.sel=-1;saveBo();n=L.length}}catch(e){}
   history.replaceState(null,'',location.pathname+location.search+'#boloes');
   $('boErr').innerHTML=n?'<span style="color:var(--ink)">Li '+n+' bolões direto da Caixa.</span>':'Não consegui ler a lista que veio da Caixa. Tente de novo pelo favorito.'})();
+// IA do caçador de bolões: uma consulta só, com os números já calculados pelo app.
+$('boAsk').addEventListener('click',async()=>{$('boAErr').textContent='';const sample=await getSample();
+  if(!sample){$('boAErr').textContent='Fora do Claude, a IA precisa de uma chave (Início → Assistente → “Usar o assistente fora do Claude”).';return}
+  if(!BO.list.length){$('boAErr').textContent='Traga os bolões da Caixa primeiro.';return}
+  const nm=(AS&&AS.cfg&&AS.cfg.nome)||'Robson',L=BO.list.map(b=>({b,c:boStats(b)})).sort((x,y)=>x.c.custoVez-y.c.custoVez).slice(0,15);
+  let gasto=0;const cart=[];for(const x of L){if(x.c.pAlvo>0&&x.b.disp!==0&&gasto+x.b.pr<=BO.orc+1e-9){cart.push(x);gasto+=x.b.pr}}
+  const dados={objetivo:'receber fatias com frequência, pagando o mínimo',receber_pelo_menos:BO.alvo,gastar_por_concurso:BO.orc,concurso:BO.concurso,
+    bolões:L.map(x=>({loterica:x.b.lot,cidade:x.b.cid,apostas:x.b.ap,dezenas:x.b.dz,cotas:x.b.tot,disponiveis:x.b.disp,preco_cota:x.b.pr,taxa_pct:+(x.c.taxaPct*100).toFixed(0),
+      chance_receber_alvo_pct:+(x.c.pAlvo*100).toFixed(3),custo_por_vez_que_recebe:isFinite(x.c.custoVez)?+x.c.custoVez.toFixed(2):null,media_quando_recebe:+x.c.medA.toFixed(2),chance_receber_algo_pct:+(x.c.pAny*100).toFixed(1),retorno_medio_pct:+(x.c.ret*100).toFixed(0),fatia_por_pontos:{15:+x.c.sh[15].toFixed(2),14:+x.c.sh[14].toFixed(2),13:+x.c.sh[13].toFixed(2),12:+x.c.sh[12].toFixed(2),11:+x.c.sh[11].toFixed(2)},calculo:x.c.modo})),
+    carteira_do_app:cart.map(x=>x.b.lot+' '+x.b.ap+'x'+x.b.dz+' '+x.b.tot+' cotas R$ '+x.b.pr)};
+  const prompt=`Você é o analista de bolões de ${nm}, num app da Lotofácil. Escreva em português do Brasil, chamando-o pelo nome, texto simples sem markdown, no máximo 12 linhas.
+Objetivo dele: receber fatias com frequência pagando pouco. Use SOMENTE os números abaixo (calculados pelo app, não invente outros).
+Diga: 1) quais 1 a 3 bolões combinam melhor com o objetivo e por quê (frequência, custo por vez, fatia típica); 2) se vale mudar o valor “receber pelo menos” ou o gasto para ter mais frequência; 3) um alerta honesto: nenhum bolão aumenta o retorno médio (fica perto do retorno_medio_pct mostrado, abaixo do que se paga), as dezenas não mudam a chance, e a taxa encarece.
+DADOS: ${JSON.stringify(dados)}`;
+  const b=$('boAsk');b.disabled=true;b.textContent='Analisando…';$('boAI').textContent='⏳ A IA está lendo o ranking…';
+  try{const r=await sample(prompt,{cache:false,modelTier:'default'});$('boAI').textContent=r.text||'(sem resposta)'}
+  catch(e){$('boAI').textContent='';$('boAErr').textContent='A IA não respondeu agora. Detalhe: '+String(e&&e.message||e).slice(0,200)+' O ranking e a carteira acima continuam valendo, pois são cálculos do app.'}
+  finally{b.disabled=false;b.textContent='Pedir análise da IA'}});
 // ---------- navegação ----------
 const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:renderMt,assistente:renderAs,calc:renderCl,boloes:renderBo,ciclos:()=>{}};
 let DIRTY=new Set(Object.keys(RENDERS));

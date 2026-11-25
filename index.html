@@ -245,7 +245,7 @@ header.top .band,header.top.band{padding-bottom:20px}
 .crit input{width:18px;height:18px;min-height:0;accent-color:var(--pur)}
 .qr{display:flex;flex-wrap:wrap;gap:6px}
 .qr button{min-height:36px;font-size:14px;padding:0 12px;background:var(--pur2);color:var(--pur);font-weight:500}
-#m-boloes .kpi b{font-size:clamp(18px,2.2vw,24px);line-height:1.2;display:block;white-space:normal;overflow-wrap:anywhere}
+#m-teimosinha .kpi b,#m-boloes .kpi b{font-size:clamp(18px,2.2vw,24px);line-height:1.2;display:block;white-space:normal;overflow-wrap:anywhere}
 @media(max-width:860px){.hero,.two{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:600px){.subm{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.subm a{flex:none}.mods{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1*max(5vw,16px));padding:0 max(5vw,16px) 4px;width:100vw}.mods a{flex:none}header.top .wrap>div:first-child{width:100%}table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px;border-bottom:1px solid var(--line)}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}.stack tr.end td{padding-inline-start:0}.stack tr.end td::before{display:none}.bar{grid-template-columns:5.5em minmax(0,1fr) 5.5em}}
 @media(prefers-reduced-motion:no-preference){.n.pend{animation:pop .5s ease both}@keyframes pop{from{transform:scale(.85)}to{transform:none}}}
@@ -273,6 +273,9 @@ header.top .band,header.top.band{padding-bottom:20px}
     <div>
       <h2 id="asHi" style="margin:0 0 6px;font-size:clamp(28px,4vw,40px);line-height:1.1"></h2>
       <p class="sub" id="asSit"></p>
+      <div id="asConf"></div>
+      <div id="asAlert"></div>
+      <div id="asTeim"></div>
       <div id="asBest"></div>
       <div class="chatlog" id="asLog" aria-live="polite"></div>
       <div class="qr" id="asQR" style="margin:10px 0"></div>
@@ -1369,6 +1372,34 @@ header.top .band,header.top.band{padding-bottom:20px}
   <div id="boDet" style="margin-top:20px"></div>
 </div></section>
 </main>
+<main id="m-teimosinha" class="mod" hidden>
+<section class="band"><div class="wrap">
+  <div class="hero">
+    <div class="slip">
+      <h2>Teimosinha</h2>
+      <p class="sub" style="margin-top:0">A mesma aposta por 3, 6, 12, 18 ou 24 concursos seguidos. Planeje, teste no passado e acompanhe.</p>
+      <div class="formrow">
+        <label>Jogos<select id="tmSrc"><option value="melhor">Melhor opção do dia</option><option value="plano">Plano atual do assistente</option><option value="lote">Último lote salvo</option><option value="volante">Dezenas marcadas no Montar jogo</option><option value="texto">Digitar os jogos</option></select></label>
+        <label>Concursos<select id="tmK"><option>3</option><option>6</option><option selected>12</option><option>18</option><option>24</option></select></label>
+      </div>
+      <textarea id="tmTxt" rows="4" style="width:100%" hidden placeholder="Um jogo por linha, de 15 a 20 dezenas. Ex.: 01 02 03 05 08 09 10 12 13 14 16 18 20 22 24"></textarea>
+      <div class="formrow"><button id="tmGo">Calcular e testar</button><button class="ghost" id="tmReg" disabled>Registrar esta Teimosinha</button></div>
+      <div class="err" id="tmErr"></div>
+    </div>
+    <div class="status">
+      <p class="sub" style="margin:0" id="tmHead">Escolha os jogos e o período</p>
+      <h2 id="tmBig" style="font-size:clamp(28px,4vw,44px);color:var(--pur);margin:4px 0"></h2>
+      <p class="sub" id="tmSub"></p>
+      <div class="kpis" id="tmK2"></div>
+    </div>
+  </div>
+</div></section>
+<section class="band" style="padding-top:0"><div class="wrap">
+  <div id="tmBack"></div>
+  <h3 style="margin-top:24px">Minhas Teimosinhas</h3>
+  <div id="tmList"><p class="lead">Nenhuma Teimosinha registrada.</p></div>
+</div></section>
+</main>
 <main id="m-calc" class="mod" hidden>
 <section class="band"><div class="wrap">
   <div class="hero">
@@ -2095,7 +2126,7 @@ let pos={mode:'s',dz:9,last:null,A:null,chiS:null};
 function sortedMatrix(){const A=Array.from({length:25},()=>Array(15).fill(0));draws.forEach(m=>fromMask(m).forEach((d,k)=>A[d-1][k]++));return A}
 function contingencyP(A){const rs=A.map(r=>r.reduce((a,b)=>a+b,0)),cs=A[0].map((_,j)=>A.reduce((a,r)=>a+r[j],0)),T=rs.reduce((a,b)=>a+b,0);let chi=0;
   A.forEach((r,i)=>r.forEach((o,j)=>{const e=rs[i]*cs[j]/T;if(e>0)chi+=(o-e)**2/e}));const df=(25-1)*(15-1);return {chi,df,p:gammaQ(df/2,chi/2)}}
-const ORD_N0=3835,ORD_SEEN=new Set();let ORD_N=ORD_N0;
+const PREMIO15={};const ORD_N0=3835,ORD_SEEN=new Set();let ORD_N=ORD_N0;
 function renderPos(){
   const S=pos.mode==='s',A=S?ORD.pos:sortedMatrix();pos.A=A;const T=S?ORD_N:draws.length;drawPoOrd();
   $('poS').classList.toggle('on',S);$('poC').classList.toggle('on',!S);$('poS').setAttribute('aria-pressed',S);$('poC').setAttribute('aria-pressed',!S);
@@ -2932,7 +2963,7 @@ function drawPlan(){const p=AS.plan;if(!p){$('asPlan').innerHTML='';return}
   $('asGer').onclick=()=>{GER.jogos=p.games;GER.n=p.n;GER.tipo=p.desc;location.hash='#gerador';setTimeout(renderGStats,50)};
   $('asNo').onclick=()=>{AS.plan=null;drawPlan()}}
 function asPush(role,text,tl){const d=document.createElement('div');d.className='msg '+(role==='me'?'me':'ai');d.textContent=text;if(tl){const t=document.createElement('div');t.className='tl';t.innerHTML=tl;d.appendChild(t)}$('asLog').appendChild(d);$('asLog').scrollTop=$('asLog').scrollHeight;return d}
-function renderAs(){const N=draws.length,nm=AS.cfg.nome||'Robson';if(!st)render();
+function renderAs(){const N=draws.length,nm=AS.cfg.nome||'Robson';if(!st)render();try{renderConf();renderAlerts();renderTeimHome()}catch(e){}
   $('asName').value=nm;$('asCrit').innerHTML=CRITS.map(([k,l])=>`<label><input type="checkbox" value="${k}"${AS.cfg.crit.includes(k)?' checked':''}>${esc(l)}</label>`).join('');
   const h=new Date().getHours();$('asHi').textContent=(h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+', '+nm+'.';
   $('asSit').textContent='O concurso '+N+' saiu com '+fromMask(draws[N-1]).map(p2).join(' ')+'. Ciclo '+st.cur.cyc+': '+(st.cur.pend.length?'faltam '+st.cur.pend.map(p2).join(', ')+'.':'acabou de fechar.')+' Próximo concurso: '+(N+1)+'.';
@@ -3298,7 +3329,8 @@ function scData(){const N=draws.length;if(SC.cache&&SC.cache.N===N)return SC.cac
   const D=R(1,25).map(d=>{let atr=0;for(let i=N-1;i>=0&&!has(draws[i],d);i--)atr++;
     let rec=0,g=0,runs={1:[],0:[]},cur=null,len=0;for(let i=0;i<N;i++){const h=has(draws[i],d)?1:0;if(!h){g++;if(g>rec)rec=g}else g=0;if(h===cur)len++;else{if(cur!==null)runs[cur].push(len);cur=h;len=1}}
     const avgRun=x=>runs[x].length?runs[x].reduce((a,b)=>a+b,0)/runs[x].length:1;
-    return {d,atr,rec,f100:fcount(N-100,N,d),f25:fcount(N-25,N,d),f10:fcount(N-10,N,d),pend:st.cur.pend.includes(d),ult:has(last,d),estado:cur,dur:len,medDur:avgRun(cur)}});
+    let recP=0,gp=0;for(let i=0;i<N;i++){if(has(draws[i],d)){gp++;if(gp>recP)recP=gp}else gp=0}
+    return {d,atr,rec,recP,f100:fcount(N-100,N,d),f25:fcount(N-25,N,d),f10:fcount(N-10,N,d),pend:st.cur.pend.includes(d),ult:has(last,d),estado:cur,dur:len,medDur:avgRun(cur)}});
   const P={};SC_P.forEach(([id,,f])=>{const v=[];for(let i=1;i<N;i++)v.push(f(draws[i],draws[i-1]));v.sort((a,b)=>a-b);P[id]={lo:v[Math.floor(v.length*0.1)],hi:v[Math.floor(v.length*0.9)]}});
   return SC.cache={N,D,P,last}}
 function scScore(x){const o=SC.on,r=[];let s=0;
@@ -3346,8 +3378,78 @@ DADOS: ${JSON.stringify(dados)}`;
   const b=$('scAI');b.disabled=true;b.textContent='Lendo o cenário…';$('scAIOut').textContent='⏳ A IA está lendo o cenário…';
   try{const r=await sample(prompt,{cache:false,modelTier:'default'});$('scAIOut').textContent=r.text||''}catch(e){$('scAIOut').textContent='';$('scErr').textContent='A IA não respondeu agora ('+String(e&&e.message||e).slice(0,160)+'). A sugestão e o painel funcionam sem ela.'}
   finally{b.disabled=false;b.textContent='Pedir leitura da IA'}});
+// ---------- Conferência automática e alertas (Início) ----------
+function premioJogo(ds,m,c){const P=prize(),n=ds.length,h=pc32(toMask(ds)&m),p15=PREMIO15[c]!=null?PREMIO15[c]:P[15];
+  const val=k=>k===15?p15:P[k];let v=0;if(n===15){if(h>=11)v=val(h)}else for(let k=11;k<=15;k++)v+=subCount(n,h,k)*val(k);return {h,v}}
+function renderConf(){const N=draws.length;let all=[];try{all=JSON.parse(localStorage.getItem(JK)||'null')?.lotes||[]}catch(e){}
+  const alvo=all.filter(L=>L.apos+1<=N&&L.apos+1>=N-2);if(!alvo.length){$('asConf').innerHTML='';return}
+  const porC={};alvo.forEach(L=>{const c=L.apos+1;(porC[c]=porC[c]||[]).push(L)});
+  $('asConf').innerHTML=Object.keys(porC).map(Number).sort((a,b)=>b-a).map(c=>{const m=draws[c-1];let jog=0,prem=0,tot=0,best=0,gasto=0;const faixas={};
+    porC[c].forEach(L=>L.jogos.forEach(ds=>{jog++;gasto+=comb(ds.length,15)*prize().a;const r=premioJogo(ds,m,c);if(r.h>best)best=r.h;if(r.v>0){prem++;tot+=r.v;const k=Math.min(15,r.h);faixas[k]=(faixas[k]||0)+1}}));
+    const fx=Object.keys(faixas).map(Number).sort((a,b)=>b-a).map(k=>faixas[k]+'× '+k+' pontos').join(', ');
+    return `<div class="plan" style="border-color:${prem?'var(--gold)':'var(--line)'};margin-bottom:10px"><p class="small" style="margin:0">Conferência automática · concurso ${c}${c===N?' (último)':''}</p>
+      <h3 style="margin:4px 0">${prem?'🎉 '+prem+' jogo'+(prem>1?'s':'')+' premiado'+(prem>1?'s':'')+': '+esc(brl2(tot)):'Nenhum prêmio desta vez'}</h3>
+      <p class="small" style="margin:0">${jog} jogo(s) conferido(s)${fx?': '+esc(fx):''}. Melhor acerto: ${best} pontos. Gasto: ${esc(brl2(gasto))}. Sorteadas: ${fromMask(m).map(p2).join(' ')}.${(faixas[14]||faixas[15])&&PREMIO15[c]==null?' Os prêmios de 14 e 15 são estimados; confira o valor oficial na Caixa.':''}</p></div>`}).join('')}
+function renderAlerts(){const C=scData(),N=C.N,al=[];
+  C.D.forEach(x=>{if(x.rec&&x.atr>=x.rec)al.push([3,`<b>${p2(x.d)}</b> bateu o recorde de atraso: ${x.atr} concursos sem sair (recorde anterior ${x.rec})`]);
+    else if(x.rec&&x.atr>=Math.max(3,x.rec-2))al.push([2,`<b>${p2(x.d)}</b> está a ${x.rec-x.atr} do recorde de atraso: ${x.atr} sem sair (recorde ${x.rec})`]);
+    else if(x.atr>=4)al.push([1,`<b>${p2(x.d)}</b> está há ${x.atr} concursos sem sair`]);
+    if(x.estado&&x.recP&&x.dur>=Math.max(6,x.recP-2))al.push([1,`<b>${p2(x.d)}</b> saiu nos últimos ${x.dur} concursos seguidos (recorde ${x.recP})`])});
+  const pend=st.cur.pend;if(pend.length&&pend.length<=3)al.push([2,`Ciclo ${st.cur.cyc} perto de fechar: faltam ${pend.map(p2).join(', ')} (${st.cur.k} concurso(s) no ciclo; média ${fmt(st.avg,1)})`]);
+  al.sort((a,b)=>b[0]-a[0]);
+  $('asAlert').innerHTML=al.length?`<div class="plan" style="border-color:var(--line);margin-bottom:10px"><p class="small" style="margin:0">Alertas de atraso e ciclo · até o concurso ${N}</p><ul style="margin:6px 0 0;padding-left:18px">${al.slice(0,6).map(a=>`<li>${a[0]>=3?'🔴':a[0]===2?'🟠':'🟡'} ${a[1]}</li>`).join('')}</ul></div>`:''}
+// ---------- Teimosinha ----------
+const TM_K='lf_teimosinha_v1';let TM={cur:null};
+const tmLoad=()=>{try{return JSON.parse(localStorage.getItem(TM_K)||'[]')}catch(e){return[]}},tmSaveAll=L=>{try{localStorage.setItem(TM_K,JSON.stringify(L))}catch(e){}};
+const custoDs=ds=>comb(ds.length,15)*prize().a;
+function tmGames(){const src=$('tmSrc').value;let g=[];
+  if(src==='melhor'){try{const v=JSON.parse(localStorage.getItem(MB_K)||'null');if(v&&v.plan)g=v.plan.games.map(fromMask)}catch(e){}if(!g.length)throw new Error('Ainda não há melhor opção do dia. Informe o valor no Início → Assistente.')}
+  else if(src==='plano'){if(!AS.plan||!AS.plan.games)throw new Error('Nenhum plano montado no assistente.');g=AS.plan.games.map(fromMask)}
+  else if(src==='lote'){let all=[];try{all=JSON.parse(localStorage.getItem(JK)||'null')?.lotes||[]}catch(e){}if(!all.length)throw new Error('Nenhum lote salvo.');g=all[0].jogos.map(x=>x.slice())}
+  else if(src==='volante'){if(mt.sel.size<15)throw new Error('Marque de 15 a 20 dezenas em Montar jogo e testar.');g=[[...mt.sel].sort((a,b)=>a-b)]}
+  else{const lines=$('tmTxt').value.split(/\n+/).map(l=>(l.match(/\d{1,2}/g)||[]).map(Number)).filter(l=>l.length);
+    for(const [i,l] of lines.entries()){const u=[...new Set(l)];if(u.length<15||u.length>20||u.some(d=>d<1||d>25))throw new Error('O jogo da linha '+(i+1)+' precisa ter de 15 a 20 dezenas diferentes, de 01 a 25.')}g=lines.map(l=>[...new Set(l)].sort((a,b)=>a-b))}
+  if(!g.length)throw new Error('Nenhum jogo encontrado.');if(g.length>200)throw new Error('No máximo 200 jogos.');return g}
+function tmPayTables(g){const P=prize();return g.map(ds=>{const n=ds.length;return R(0,15).map(h=>n===15?(h>=11?P[h]:0):R(11,15).reduce((a,k)=>a+subCount(n,h,k)*P[k],0))})}
+function tmAnalyze(g,K){const ms=g.map(toMask),pt=tmPayTables(g),custo=g.reduce((a,ds)=>a+custoDs(ds),0);
+  let any=0,ev=0;const NS=20000;for(let i=0;i<NS;i++){const m=rnd15();let v=0;for(let j=0;j<ms.length;j++)v+=pt[j][pc32(m&ms[j])];ev+=v;if(v>0)any++}
+  const p=any/NS,N=draws.length,pay=new Float64Array(N);for(let c=0;c<N;c++){let v=0;for(let j=0;j<ms.length;j++)v+=pt[j][pc32(draws[c]&ms[j])];pay[c]=v}
+  const W=[];let sum=0,cnt=0,hasP=0;for(let c=0;c<N;c++){sum+=pay[c];cnt+=pay[c]>0;if(c>=K){sum-=pay[c-K];cnt-=pay[c-K]>0}if(c>=K-1)W.push({ini:c-K+2,tot:sum,premios:cnt})}
+  const tots=W.map(w=>w.tot).sort((a,b)=>a-b),q=f=>tots[Math.min(tots.length-1,Math.floor(f*tots.length))];
+  const best=W.reduce((a,b)=>b.tot>a.tot?b:a),worst=W.reduce((a,b)=>b.tot<a.tot?b:a);
+  return {custo,custoTot:custo*K,p,pK:1-Math.pow(1-p,K),evK:ev/NS*K,W:W.length,comPremio:W.filter(w=>w.premios>0).length/W.length,lucro:W.filter(w=>w.tot>=custo*K).length/W.length,mediana:q(0.5),p10:q(0.1),p90:q(0.9),best,worst,medPrem:W.reduce((a,w)=>a+w.premios,0)/W.length}}
+function tmShowAnalysis(g,K,A){const n=g.length;
+  $('tmHead').textContent=n+' jogo(s) por '+K+' concursos';$('tmBig').textContent=brl2(A.custoTot);$('tmSub').textContent=brl2(A.custo)+' por concurso × '+K+' concursos';
+  $('tmK2').innerHTML=[[pctF(A.pK),'chance de receber pelo menos um prêmio no período'],[fmt(A.p*K,1),'concursos com prêmio esperados no período'],[brl2(A.evK),'retorno médio esperado no período'],[pctF(A.p),'chance de prêmio em cada concurso']].map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('');
+  $('tmBack').innerHTML=`<div class="slip"><h3 style="margin-top:0">Como estes jogos teriam ido em todas as Teimosinhas de ${K} concursos da história</h3>
+   <p class="lead" style="margin-top:0">${A.W.toLocaleString('pt-BR')} períodos testados (do concurso 1 até hoje, um período começando em cada concurso).</p>
+   <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(170px,1fr))">${[[pctF(A.comPremio),'dos períodos tiveram pelo menos um prêmio'],[fmt(A.medPrem,1),'concursos premiados por período, em média'],[pctF(A.lucro),'dos períodos pagaram o custo de volta ou mais'],[brl2(A.mediana),'retorno típico (metade dos períodos ganhou menos que isso)']].map(x=>`<div class="kpi"><b>${esc(x[0])}</b><span>${esc(x[1])}</span></div>`).join('')}</div>
+   <p class="small" style="margin-top:12px">Melhor período: concursos ${A.best.ini} a ${A.best.ini+K-1}, ${brl2(A.best.tot)} em prêmios. Pior: concursos ${A.worst.ini} a ${A.worst.ini+K-1}, ${brl2(A.worst.tot)}. 80% dos períodos ficaram entre ${brl2(A.p10)} e ${brl2(A.p90)}, para um custo de ${brl2(A.custoTot)}. Prêmios de 14 e 15 usam os valores estimados do Gerador.</p></div>`}
+$('tmSrc').addEventListener('change',()=>{$('tmTxt').hidden=$('tmSrc').value!=='texto'});
+$('tmGo').addEventListener('click',()=>{$('tmErr').textContent='';try{const g=tmGames(),K=+$('tmK').value,A=tmAnalyze(g,K);TM.cur={g,K};tmShowAnalysis(g,K,A);$('tmReg').disabled=false;$('tmReg').textContent='Registrar: começa no concurso '+(draws.length+1)}catch(e){$('tmErr').textContent=e.message;$('tmReg').disabled=true}});
+$('tmReg').addEventListener('click',()=>{if(!TM.cur)return;const L=tmLoad();L.unshift({id:Date.now(),ini:draws.length+1,K:TM.cur.K,jogos:TM.cur.g,criado:new Date().toISOString()});tmSaveAll(L.slice(0,30));$('tmReg').disabled=true;$('tmReg').textContent='Registrada';renderTmList();try{renderTeimHome()}catch(e){}});
+function tmStatus(T){const N=draws.length,fim=T.ini+T.K-1,feitos=Math.max(0,Math.min(N,fim)-T.ini+1),custo=T.jogos.reduce((a,ds)=>a+custoDs(ds),0);let rec=0,prem=0;const linhas=[];
+  for(let c=T.ini;c<=Math.min(N,fim);c++){let v=0,best=0;T.jogos.forEach(ds=>{const r=premioJogo(ds,draws[c-1],c);v+=r.v;if(r.h>best)best=r.h});rec+=v;if(v>0)prem++;linhas.push({c,v,best})}
+  return {fim,feitos,custo,gasto:custo*feitos,rec,prem,linhas,acabou:N>=fim}}
+function renderTmList(){const L=tmLoad();if(!L.length){$('tmList').innerHTML='<p class="lead">Nenhuma Teimosinha registrada.</p>';return}
+  $('tmList').innerHTML=L.map((T,i)=>{const S=tmStatus(T),saldo=S.rec-S.gasto;
+    return `<div class="plan" style="margin-bottom:12px;border-color:${S.acabou?'var(--gold)':'var(--pur)'}"><p class="small" style="margin:0">${T.jogos.length} jogo(s) · concursos ${T.ini} a ${S.fim} · ${brl2(S.custo)} por concurso</p>
+     <h3 style="margin:4px 0">${S.acabou?'Encerrada':'Em andamento'}: ${S.feitos} de ${T.K} concursos</h3>
+     <p style="margin:0 0 6px">Gasto ${esc(brl2(S.gasto))} · prêmios ${esc(brl2(S.rec))} · saldo <b>${esc((saldo>=0?'+':'−')+brl2(Math.abs(saldo)))}</b> · ${S.prem} concurso(s) com prêmio</p>
+     ${S.linhas.length?`<details><summary class="small">Concurso a concurso</summary><div class="small" style="margin-top:6px">${S.linhas.slice().reverse().map(l=>l.c+': melhor '+l.best+' pts'+(l.v?' · '+brl2(l.v):'')).join('<br>')}</div></details>`:'<p class="small" style="margin:0">Começa no concurso '+T.ini+'.</p>'}
+     <details><summary class="small">Jogos</summary><div class="small dz" style="margin-top:6px">${T.jogos.slice(0,10).map(ds=>ds.map(p2).join(' ')).join('<br>')}${T.jogos.length>10?'<br>…':''}</div></details>
+     ${S.acabou?`<div class="formrow" style="margin-top:8px"><button class="ghost" data-tren="${i}">Renovar com os mesmos jogos</button><button class="ghost" data-tsug="${i}">Ver nova sugestão com o cenário atual</button></div>`:''}
+     <div class="formrow" style="margin-top:4px"><button class="ghost" data-tdel="${i}" style="min-height:32px;font-size:13px">Apagar</button></div></div>`}).join('')}
+$('tmList').addEventListener('click',e=>{const L=tmLoad(),b=e.target.closest('button');if(!b)return;
+  if(b.dataset.tdel!=null){L.splice(+b.dataset.tdel,1);tmSaveAll(L);renderTmList();try{renderTeimHome()}catch(x){}}
+  if(b.dataset.tren!=null){const T=L[+b.dataset.tren];L.unshift({id:Date.now(),ini:draws.length+1,K:T.K,jogos:T.jogos,criado:new Date().toISOString()});tmSaveAll(L);renderTmList();try{renderTeimHome()}catch(x){}}
+  if(b.dataset.tsug!=null){const T=L[+b.dataset.tsug];$('scN').value=String(Math.min(20,Math.max(15,T.jogos[0].length)));location.hash='montar';setTimeout(()=>{try{scSuggest();$('scOut').scrollIntoView({behavior:'smooth'})}catch(x){}},200)}});
+function renderTeimHome(){const L=tmLoad().map(T=>({T,S:tmStatus(T)})).filter(x=>!x.S.acabou||draws.length-x.S.fim<=3);if(!L.length){$('asTeim').innerHTML='';return}
+  $('asTeim').innerHTML=L.slice(0,3).map(({T,S})=>`<div class="plan" style="margin-bottom:10px;border-color:${S.acabou?'var(--gold)':'var(--line)'}"><p class="small" style="margin:0">Teimosinha · concursos ${T.ini} a ${S.fim}</p>
+    <p style="margin:4px 0 0">${S.acabou?'<b>Encerrou.</b> ':''}${S.feitos} de ${T.K} concursos · gasto ${esc(brl2(S.gasto))} · prêmios ${esc(brl2(S.rec))}${S.acabou?' · <a href="#teimosinha">renovar ou trocar</a>':''}</p></div>`).join('')}
+function renderTm(){$('tmTxt').hidden=$('tmSrc').value!=='texto';renderTmList()}
 // ---------- navegação ----------
-const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:()=>{renderMt();renderSc()},assistente:renderAs,calc:renderCl,boloes:renderBo,ciclos:()=>{}};
+const RENDERS={comportamento:renderComp,analise:()=>{if(!cst)renderComp();renderAnal()},frequencia:renderFreq,padroes:renderPad,soma:renderSoma,finalzero:renderFz,posicoes:renderPos,linhas:renderLc,pareto:renderPareto,ausentes:renderAus,duques:renderDq,sequencias:renderSq,trincas:renderTr,filtros:renderFt,naipes:renderNa,gerador:renderGer,resumo:renderResumo,combinar:renderCb,montar:()=>{renderMt();renderSc()},assistente:renderAs,calc:renderCl,boloes:renderBo,teimosinha:renderTm,ciclos:()=>{}};
 let DIRTY=new Set(Object.keys(RENDERS));
 function renderAll(){render();cst=null;DIRTY=new Set(Object.keys(RENDERS));const m=curMod();if(RENDERS[m]){DIRTY.delete(m);RENDERS[m]()}}
 const GROUPS=[
@@ -3356,7 +3458,7 @@ const GROUPS=[
  ['dezenas','Dezenas',[['frequencia','Frequência'],['comportamento','Comportamento'],['analise','Sequências e atrasos'],['ciclos','Ciclos']]],
  ['padroes-g','Padrões',[['padroes','Pares, primos e grupos'],['soma','Soma'],['linhas','Linhas e colunas'],['naipes','Naipes'],['sequencias','Sequências e saltos'],['posicoes','Posições'],['pareto','Pareto']]],
  ['comb','Combinações',[['combinar','Simulador de combinações'],['trincas','Duplas e trincas'],['duques','Afinidade (duques)']]],
- ['jogos','Jogos',[['montar','Montar jogo e testar'],['gerador','Gerador e fechamentos'],['calc','Calculadora de probabilidades'],['boloes','Avaliador de bolões'],['filtros','Filtros']]]];
+ ['jogos','Jogos',[['montar','Montar jogo e testar'],['gerador','Gerador e fechamentos'],['calc','Calculadora de probabilidades'],['boloes','Avaliador de bolões'],['teimosinha','Teimosinha'],['filtros','Filtros']]]];
 const ALLMODS=GROUPS.flatMap(g=>g[2].map(x=>x[0]));
 function curMod(){const h=location.hash.slice(1);return ALLMODS.includes(h)&&document.getElementById('m-'+h)?h:(document.getElementById('m-assistente')?'assistente':'resumo')}
 $('gnav').innerHTML=GROUPS.map(g=>`<a href="#${g[2][0][0]}" data-g="${g[0]}">${esc(g[1])}</a>`).join('');
@@ -3374,6 +3476,7 @@ renderAll();route();
 (async()=>{try{const r=await fetch('resultados.json',{cache:'no-store'});if(!r.ok)return;const arr=await r.json();if(!Array.isArray(arr))return;let add=0,add2=0;
   arr.sort((a,b)=>a[0]-b[0]).forEach(row=>{const c=row[0],ds=row.slice(1,16).map(Number),x=row[16]&&typeof row[16]==='object'?row[16]:null;if(c===MASKS.length+1&&ds.length===15&&ds.every(d=>d>=1&&d<=25)){MASKS.push(toMask(ds));add++}
     if(x){if(c>ORD_N0&&!ORD_SEEN.has(c)&&Array.isArray(x.o)&&x.o.length===15&&x.o.every(d=>d>=1&&d<=25)){ORD_SEEN.add(c);x.o.forEach((d,jj)=>ORD.pos[d-1][jj]++);ORD_N++;ORD.ordem[c]=x.o.map(Number);add2++}
+      if(x.p!=null)PREMIO15[c]=+x.p;
       if(c%10===0&&x.d&&!FZ_INFO[c]){FZ_INFO[c]=[String(x.d),x.p?Number(x.p).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}):'','r'];add2++}}});
   if(add||add2){if(add)extra=extra.slice(Math.min(extra.length,add));saveExtra();cst=null;st=null;renderAll();route()}}catch(e){}})();
 

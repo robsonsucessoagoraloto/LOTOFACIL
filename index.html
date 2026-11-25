@@ -273,6 +273,7 @@ header.top .band,header.top.band{padding-bottom:20px}
     <div>
       <h2 id="asHi" style="margin:0 0 6px;font-size:clamp(28px,4vw,40px);line-height:1.1"></h2>
       <p class="sub" id="asSit"></p>
+      <div id="asBest"></div>
       <div class="chatlog" id="asLog" aria-live="polite"></div>
       <div class="qr" id="asQR" style="margin:10px 0"></div>
       <div class="chat"><textarea id="asIn" placeholder="Escreva para o assistente… (Ctrl+Enter envia)"></textarea></div>
@@ -297,7 +298,7 @@ header.top .band,header.top.band{padding-bottom:20px}
           <label>Formato<select id="apFmt"><option value="15">Jogos de 15 (quantos couberem)</option><option value="16">Apostas de 16 dezenas</option><option value="gar">Fechamento com garantia</option></select></label>
           <button id="apGo">Montar plano automático</button>
         </div>
-        <label style="flex-direction:row;display:flex;align-items:center;gap:8px;color:var(--ink);font-size:15px"><input type="checkbox" id="apAuto" style="width:20px;height:20px;min-height:0">Montar sozinho toda vez que eu abrir o app</label>
+        <label style="flex-direction:row;display:flex;align-items:center;gap:8px;color:var(--ink);font-size:15px"><input type="checkbox" id="apAuto" style="width:20px;height:20px;min-height:0">Mostrar a melhor opção do dia toda vez que eu abrir o app</label>
         <div class="err" id="apErr"></div>
       </div>
       <div id="asPlan"></div>
@@ -2914,13 +2915,39 @@ function renderAs(){const N=draws.length,nm=AS.cfg.nome||'Robson';if(!st)render(
   $('asName').value=nm;$('asCrit').innerHTML=CRITS.map(([k,l])=>`<label><input type="checkbox" value="${k}"${AS.cfg.crit.includes(k)?' checked':''}>${esc(l)}</label>`).join('');
   const h=new Date().getHours();$('asHi').textContent=(h<12?'Bom dia':h<18?'Boa tarde':'Boa noite')+', '+nm+'.';
   $('asSit').textContent='O concurso '+N+' saiu com '+fromMask(draws[N-1]).map(p2).join(' ')+'. Ciclo '+st.cur.cyc+': '+(st.cur.pend.length?'faltam '+st.cur.pend.map(p2).join(', ')+'.':'acabou de fechar.')+' Próximo concurso: '+(N+1)+'.';
-  if(!$('asLog').children.length)asPush('ai',nm+', quanto você quer gastar com jogos no concurso '+(N+1)+'? Informe o valor em “Quanto quer gastar hoje” (ou escreva aqui) e eu monto o plano com os seus critérios, calculando custo e garantia.');
+  if(!$('asLog').children.length)asPush('ai',AS.cfg.bud?nm+', a melhor opção para '+brl2(AS.cfg.bud)+' está aí em cima. Se quiser outra coisa, é só pedir: “quero gastar R$ 50”, “10 jogos”, “matriz 17 dezenas”, “fechamento com garantia de 13”, “fixar 01 e 05”.':nm+', quanto você quer gastar com jogos no concurso '+(N+1)+'? Escreva o valor (ex.: “quero gastar R$ 30”) e eu testo os formatos e mostro a melhor opção.');
   if(AS.cfg.bud&&!$('asBud').value)$('asBud').value=AS.cfg.bud;if(AS.cfg.fmt)$('apFmt').value=AS.cfg.fmt;$('apAuto').checked=!!AS.cfg.auto;
-  if(AS.cfg.auto&&AS.cfg.bud&&AS.autoDoneFor!==N){AS.autoDoneFor=N;setTimeout(planoAuto,30)}
+  if(AS.cfg.auto===undefined)AS.cfg.auto=true;$('apAuto').checked=!!AS.cfg.auto;if(AS.cfg.auto&&AS.cfg.bud&&AS.autoDoneFor!==N){AS.autoDoneFor=N;setTimeout(()=>mostrarMelhor(false),30)}else if(!AS.cfg.bud)$('asBest').innerHTML='<div class="plan"><b>Melhor opção do dia</b><p class="small" style="margin:6px 0 0">Diga quanto quer gastar por concurso (campo “Quanto quer gastar hoje” ou escreva “quero gastar R$ 30”) e, toda vez que abrir o app, eu mostro aqui a melhor opção que encontrei para o próximo concurso.</p></div>';
   $('asQR').innerHTML=['Monte o plano de hoje','Quero gastar R$ 35','Quero uma matriz de 16 jogos com 16 dezenas','Por que essas dezenas?','O que o ciclo mostra hoje?'].map(q=>`<button>${esc(q)}</button>`).join('')}
 $('asName').addEventListener('change',()=>{AS.cfg.nome=$('asName').value.trim().slice(0,30)||'Robson';asSave();renderAs()});
 $('asCrit').addEventListener('change',()=>{AS.cfg.crit=[...document.querySelectorAll('#asCrit input:checked')].map(x=>x.value);asSave()});
 // Modo rápido (IA gratuita): o app monta o plano na hora, sem IA; a IA só comenta, numa única consulta, sem travar a tela.
+// Melhor cenário: monta cada formato que cabe no orçamento e compara pela matemática (simulação de 20 mil sorteios).
+function avaliaPlano(games,n){const P=prize(),N=20000,pay=R(0,15).map(h=>n===15?(h>=11?P[h]:0):R(11,15).reduce((a,k)=>a+subCount(n,h,k)*P[k],0));let any=0,g13=0,ev=0;
+  for(let i=0;i<N;i++){const m=rnd15();let v=0,b=0;for(const g of games){const h=pc32(m&g);v+=pay[h];if(h>b)b=h}ev+=v;if(v>0)any++;if(b>=13)g13++}return{pAny:any/N,p13:g13/N,ev:ev/N}}
+function melhorCenario(o,bud){const P=prize(),cands=[];
+  const tries=[['15 dezenas por jogo',{fmt:'15'}],['Apostas de 16 dezenas',{fmt:'16'}],['Matriz 16 dezenas',{fmt:'mat',k:16}],['Matriz 17 dezenas',{fmt:'mat',k:17}],['Fechamento com garantia',{fmt:'gar'}]];
+  for(const [nome,t] of tries){if(t.fmt==='16'&&bud<comb(16,15)*P.a)continue;if(t.fmt==='gar'&&bud<21)continue;
+    planoAuto(Object.assign({},o,t,{silent:true}));const p=AS.plan;if(!p||!p.games||!p.games.length||p.custo>bud+1e-9)continue;
+    const e=avaliaPlano(p.games,p.n);cands.push({nome,plan:p,...e})}
+  if(!cands.length)return null;cands.sort((a,b)=>b.pAny-a.pAny||b.ev-a.ev);return cands}
+// Melhor opção do dia: calculada uma vez por concurso e valor, guardada e mostrada sempre que o app abre.
+const MB_K='lf_melhor_v1';
+function mostrarMelhor(force){const N=draws.length,bud=+$('asBud').value||AS.cfg.bud||0,nm=AS.cfg.nome||'Robson';if(!bud)return;
+  const P=prize(),key=[N,bud,AS.cfg.crit.join(','),P.a,P[11],P[12],P[13]].join('|');let c=null;
+  if(!force){try{const v=JSON.parse(localStorage.getItem(MB_K)||'null');if(v&&v.key===key)c=v}catch(e){}}
+  if(!c){$('asBest').innerHTML='<div class="plan"><b>⏳ Testando os formatos para o concurso '+(N+1)+'…</b></div>';
+    const C=melhorCenario({},bud);if(!C){$('asBest').innerHTML='<div class="plan"><b>Melhor opção do dia</b><p class="small">Com '+brl2(bud)+' não coube nenhum formato. Aumente o valor.</p></div>';return}
+    const B=C[0];c={key,conc:N+1,bud,nome:B.nome,plan:{games:B.plan.games,n:B.plan.n,desc:B.plan.desc,titulo:'Melhor opção do concurso '+(N+1),just:B.plan.just,custo:B.plan.custo,why:B.plan.why},
+      linhas:C.map(x=>({nome:x.nome,q:x.plan.games.length,custo:x.plan.custo,pAny:x.pAny,p13:x.p13}))};try{localStorage.setItem(MB_K,JSON.stringify(c))}catch(e){}}
+  AS.plan=c.plan;AS.lastGen={games:c.plan.games,n:c.plan.n,desc:c.plan.desc};drawPlan();
+  const b=c.linhas[0],seg=c.linhas[1];
+  $('asBest').innerHTML=`<div class="plan"><p class="small" style="margin:0">Melhor opção para o concurso ${c.conc} com ${esc(brl2(c.bud))}</p>
+    <h3 style="margin:4px 0 6px">${esc(c.nome)}: ${b.q} jogo${b.q>1?'s':''} por ${esc(brl2(b.custo))}</h3>
+    <p style="margin:0 0 8px">Dá prêmio em <b>${fmt(b.pAny*100,1)}%</b> dos sorteios e 13 pontos ou mais em ${fmt(b.p13*100,2)}%${seg?`. O segundo melhor formato (${esc(seg.nome)}) dá prêmio em ${fmt(seg.pAny*100,1)}%`:''}.</p>
+    <details><summary class="small">Ver todos os formatos testados</summary><div class="small" style="white-space:pre-wrap;margin-top:6px">${c.linhas.map((x,i)=>(i?'   ':'➜ ')+esc(x.nome)+': '+x.q+' jogo(s), '+esc(brl2(x.custo))+' · prêmio em '+fmt(x.pAny*100,1)+'% · 13+ em '+fmt(x.p13*100,2)+'%').join('\n')}</div></details>
+    <p class="small" style="margin:8px 0 0">Testado em 20 mil sorteios simulados. Os jogos estão no quadro do plano. <button class="ghost" id="mbRe" style="min-height:32px;padding:0 10px;font-size:13px">Recalcular</button></p></div>`;
+  $('mbRe').onclick=()=>mostrarMelhor(true)}
 async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.cfg.nome||'Robson';
   const nums=x=>(x.match(/\d{1,2}/g)||[]).map(Number).filter(v=>v>=1&&v<=25),o={};let m;
   if(m=text.match(/(\d{1,3})\s*(?:jogos|jogo|apostas|aposta|cart[õo]es|volantes)\b/i))o.Q=+m[1];
@@ -2940,13 +2967,17 @@ async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.
   let ctx='';
   if(quer){if(!bud&&!(o.fmt==='mat'||o.Q&&o.fmt!=='gar')){AS.pediuValor=true;AS.ordem=o;asPush('ai',nm+', quanto você quer gastar hoje? Escreva o valor (por exemplo: "quero gastar R$ 35") ou preencha “Quanto quer gastar hoje”, e eu monto o plano na hora.');return}
     if(!temOrdem&&AS.ordem){Object.assign(o,AS.ordem)}AS.ordem=null;
+    const livre=!(o.Q||o.n||o.k||o.gar||o.fmt);
+    if(livre&&bud){const C=melhorCenario(o,bud);if(C){const B=C[0];AS.plan=B.plan;AS.lastGen={games:B.plan.games,n:B.plan.n,desc:B.plan.desc};drawPlan();
+      const lin=C.map((c,i)=>(i?'   ':'➜ ')+c.nome+': '+c.plan.games.length+' jogo(s), '+brl2(c.plan.custo)+' · ganha algo em '+fmt(c.pAny*100,1)+'% dos sorteios · 13+ pontos em '+fmt(c.p13*100,2)+'%').join('\n');
+      asPush('ai',nm+', com '+brl2(bud)+' testei '+C.length+' formatos em 20 mil sorteios simulados e escolhi o que mais vezes dá prêmio:\n\n'+lin+'\n\nEscolhido: '+B.nome+' ('+B.plan.desc+').\n'+(B.plan.why||[]).map(x=>'• '+x).join('\n')+'\n\nOs jogos estão no quadro do plano, nesta mesma tela. Se preferir outro formato da lista, é só pedir (ex.: “matriz 17 dezenas”).');return}}
     planoAuto(o);if(!AS.plan){asPush('ai',$('apErr').textContent||'Não consegui montar o plano com esse orçamento.');return}
     const ent=[o.Q?o.Q+' jogos':'',o.n&&o.fmt!=='mat'?'de '+o.n+' dezenas':'',o.fmt==='mat'?'matriz com '+o.k+' dezenas':o.fmt==='gar'?'fechamento'+(o.k?' de '+o.k+' dezenas':'')+(o.gar?' com garantia de '+o.gar+' pontos':''):'',o.fx&&o.fx.length?'fixando '+o.fx.map(p2).join(', '):'',o.rm&&o.rm.length?'tirando '+o.rm.map(p2).join(', '):''].filter(Boolean).join(', ');
     asPush('ai',(ent?'Entendi: '+ent+'.\n\n':'')+AS.plan.just+'\n\nOs jogos estão no quadro do plano, nesta mesma tela: toque em salvar se gostar, ou me peça outro valor ou formato.');return}
   let est={};try{est=asTools().find(t=>t.name==='estado_atual').execute({})}catch(e){}
   const bubble=asPush('ai',quer?'💬 A IA está escrevendo um comentário…':'⏳ Pensando…',' ');$('asSend').disabled=true;$('asStop').hidden=false;AS.ctrl=new AbortController();
   const prompt=`Você é o assistente de ${nm} num app da Lotofácil. Responda em português do Brasil, chamando-o pelo nome, em no máximo ${quer?'4 frases':'8 frases'}, texto simples sem markdown.
-Regras: nunca diga que dezenas são mais prováveis ou que um dia é melhor; os critérios organizam o jogo mas não aumentam a chance; o retorno médio de qualquer aposta é cerca de 41% do valor. Use só os números abaixo, não invente outros.
+Regras: não afirme que dezenas são mais prováveis nem que um dia é melhor. Não repita avisos sobre chance ou retorno, a menos que ele pergunte sobre isso. Seja prático e vá direto ao ponto. Use só os números abaixo, não invente outros.
 DADOS ATUAIS: ${JSON.stringify(est).slice(0,6000)}
 ${ctx}
 ${quer?'Tarefa: comente o plano acima de forma amigável e curta (não repita a lista inteira), e pergunte se ele quer salvar os jogos ou ajustar algo.':'Pergunta de '+nm+': '+text}`;
@@ -3033,12 +3064,13 @@ function planoAuto(o){o=(o&&!o.type)?o:{};$('apErr').textContent='';const fail=m
     gtxt='Se as fixas saírem e as retiradas ficarem de fora (chance de '+(fx.length+rm.length?umEm(pc):'100%')+'), o melhor jogo faz pelo menos '+ev.minimo+' pontos'+(ev.exato?'':' (estimativa)')+(ev.minimo<11?'; em '+(ev.pct_ao_menos[11]>=99.95?'mais de 99,9':fmt(ev.pct_ao_menos[11],1))+'% desses casos, algum jogo faz 11 ou mais.':'.')}
   const h=histPure(games,n);
   const just=nm+', para o concurso '+(N+1)+' montei '+games.length+' jogo(s) por '+brl2(cost)+(bud?(cost>bud+1e-9?' (acima do orçamento de '+brl2(bud)+', porque você pediu '+games.length+' jogos)':' (orçamento: '+brl2(bud)+')'):'')+'.\n\n'+why.map(x=>'• '+x).join('\n')+(gtxt?'\n\n'+gtxt:'')+
-    '\n\nNo histórico, estes jogos teriam dado prêmio em '+fmt(h.pct_com_premio,1)+'% dos concursos, com retorno de '+h.retorno_pct+'% do valor gasto (a conferência no passado só ilustra a variação).\n\nLembrete honesto: esses critérios organizam o jogo do jeito que você gosta, mas não aumentam a chance de prêmio. O retorno médio de qualquer aposta é cerca de 41% do valor.';
-  AS.lastGen={games,n,desc};AS.plan={games,n,desc,titulo:'Plano automático do concurso '+(N+1),just,custo:cost};drawPlan();
+    '\n\nNo histórico, estes jogos teriam dado prêmio em '+fmt(h.pct_com_premio,1)+'% dos concursos, com retorno de '+h.retorno_pct+'% do valor gasto (a conferência no passado só ilustra a variação).';
+  AS.lastGen={games,n,desc};AS.plan={games,n,desc,titulo:'Plano automático do concurso '+(N+1),just,custo:cost,why:why.slice()};if(o.silent)return;drawPlan();
   try{AS.cfg.bud=bud;AS.cfg.fmt=fmtSel;asSave()}catch(e){}
   $('asPlan').scrollIntoView({behavior:'smooth',block:'nearest'})}
 $('apGo').addEventListener('click',planoAuto);
-$('apAuto').addEventListener('change',()=>{AS.cfg.auto=$('apAuto').checked;AS.cfg.bud=+$('asBud').value||AS.cfg.bud||0;AS.cfg.fmt=$('apFmt').value;asSave()});
+$('apAuto').addEventListener('change',()=>{AS.cfg.auto=$('apAuto').checked;AS.cfg.bud=+$('asBud').value||AS.cfg.bud||0;AS.cfg.fmt=$('apFmt').value;asSave();if(AS.cfg.auto)mostrarMelhor(false)});
+$('asBud').addEventListener('change',()=>{const v=+$('asBud').value;if(v>0){AS.cfg.bud=v;asSave();if(AS.cfg.auto!==false)mostrarMelhor(false)}});
 $('asBud').addEventListener('change',()=>{AS.cfg.bud=+$('asBud').value||0;asSave()});
 
 // ---------- Coordenador ----------

@@ -2916,8 +2916,29 @@ function renderAs(){const N=draws.length,nm=AS.cfg.nome||'Robson';if(!st)render(
   $('asQR').innerHTML=['Monte o plano de hoje','Quero gastar R$ 35','Quero uma matriz de 16 jogos com 16 dezenas','Por que essas dezenas?','O que o ciclo mostra hoje?'].map(q=>`<button>${esc(q)}</button>`).join('')}
 $('asName').addEventListener('change',()=>{AS.cfg.nome=$('asName').value.trim().slice(0,30)||'Robson';asSave();renderAs()});
 $('asCrit').addEventListener('change',()=>{AS.cfg.crit=[...document.querySelectorAll('#asCrit input:checked')].map(x=>x.value);asSave()});
+// Modo rápido (IA gratuita): o app monta o plano na hora, sem IA; a IA só comenta, numa única consulta, sem travar a tela.
+async function asFast(text,sample){asPush('me',text);const N=draws.length,nm=AS.cfg.nome||'Robson';
+  const mB=text.match(/(?:R\$\s*|gastar\s*|or[çc]amento\s*(?:de\s*)?)(\d+(?:[.,]\d{1,2})?)|(\d+(?:[.,]\d{1,2})?)\s*reais/i);if(mB){$('asBud').value=parseFloat((mB[1]||mB[2]).replace(',','.'));try{AS.cfg.bud=+$('asBud').value;asSave()}catch(e){}}
+  if(/garantia|fechamento|matriz/i.test(text))$('apFmt').value='gar';else if(/16\s*dezenas|apostas?\s+de\s+16/i.test(text))$('apFmt').value='16';else if(/jogos?\s+de\s+15|15\s*dezenas/i.test(text))$('apFmt').value='15';
+  const bud=+$('asBud').value||0,quer=/plano|mont|jogo|matriz|fechamento|gastar|R\$|reais|or[çc]amento|aposta/i.test(text);
+  let ctx='';
+  if(quer){if(!bud){asPush('ai',nm+', quanto você quer gastar hoje? Escreva o valor (por exemplo: "quero gastar R$ 35") ou preencha “Quanto quer gastar hoje”, e eu monto o plano na hora.');return}
+    planoAuto();if(!AS.plan){asPush('ai',$('apErr').textContent||'Não consegui montar o plano com esse orçamento.');return}
+    asPush('ai',AS.plan.just);ctx='PLANO JÁ MONTADO E MOSTRADO A ELE:\n'+AS.plan.just}
+  let est={};try{est=asTools().find(t=>t.name==='estado_atual').execute({})}catch(e){}
+  const bubble=asPush('ai',quer?'💬 A IA está escrevendo um comentário…':'⏳ Pensando…',' ');$('asSend').disabled=true;$('asStop').hidden=false;AS.ctrl=new AbortController();
+  const prompt=`Você é o assistente de ${nm} num app da Lotofácil. Responda em português do Brasil, chamando-o pelo nome, em no máximo ${quer?'4 frases':'8 frases'}, texto simples sem markdown.
+Regras: nunca diga que dezenas são mais prováveis ou que um dia é melhor; os critérios organizam o jogo mas não aumentam a chance; o retorno médio de qualquer aposta é cerca de 41% do valor. Use só os números abaixo, não invente outros.
+DADOS ATUAIS: ${JSON.stringify(est).slice(0,6000)}
+${ctx}
+${quer?'Tarefa: comente o plano acima de forma amigável e curta (não repita a lista inteira), e pergunte se ele quer salvar os jogos ou ajustar algo.':'Pergunta de '+nm+': '+text}`;
+  try{const res=await sample([{role:'user',content:prompt}],{cache:false,signal:AS.ctrl.signal,onText:({text:t})=>{if(t&&!/^⏳/.test(t))bubble.firstChild.textContent=t}});
+    bubble.firstChild.textContent=res.text||'(sem resposta)'}
+  catch(e){if(quer)bubble.remove();else bubble.firstChild.textContent=e&&e.name==='AbortError'?'Conversa interrompida.':'A IA gratuita não respondeu agora ('+String(e&&e.message||e).slice(0,160)+'). Para montar jogos, a IA não é necessária: peça o plano ou use “Montar plano automático”.'}
+  finally{$('asSend').disabled=false;$('asStop').hidden=true;$('asLog').scrollTop=$('asLog').scrollHeight}}
 async function asSendMsg(text){text=(text||$('asIn').value).trim();if(!text)return;$('asIn').value='';$('asErr').textContent='';
   const sample=await getSample();if(!sample){$('asErr').textContent='Fora do Claude, o assistente precisa de uma chave de IA. Abra “Usar o assistente fora do Claude” logo abaixo: a chave do Google Gemini é gratuita.';return}
+  if(!(await sampleP)&&provOf(apiCfg())==='gemini')return asFast(text,sample);
   asPush('me',text);const N=draws.length,nm=AS.cfg.nome||'Robson',bud=+$('asBud').value||null;
   const crit=AS.cfg.crit.map(k=>CRITS.find(c=>c[0]===k)[1]).join(', ')||'nenhum (montagem equilibrada)';
   const sys=`Você é o assistente pessoal de ${nm} num app de análise da Lotofácil (15 dezenas sorteadas de 25; cada jogo de 15 tem chance de 1 em 3.268.760 de fazer 15 pontos). Último concurso na base: ${N}. Próximo: ${N+1}. Orçamento informado hoje: ${bud?brl2(bud):'ainda não informado'}. Critérios escolhidos por ${nm}: ${crit}.
